@@ -17,7 +17,7 @@ public class MenuParallax : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Vector2.offset = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+        Vector2 offset = Camera.main.ScreenToViewportPoint(Input.mousePosition);
         transform.position = Vector3.SmoothDamp(transform.position, startPos + (offset * offsetMultiplier), ref velocity, smoothTime);
     }
 }
