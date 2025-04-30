@@ -9,6 +9,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     [Header("Movement")] //player movement params
     public float speed = 6f;
+    public float speedMod = 2f;
     public float airControlFactor = 0.5f;  // Reduced movement speed in the air
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
@@ -26,10 +27,12 @@ public class ThirdPersonMovement : MonoBehaviour
     Vector3 velocity;
     bool isGrounded;
     bool isFlipping;
+    bool isSprinting;
 
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
+        isSprinting = false;
     }
 
     void Update()
@@ -47,7 +50,7 @@ public class ThirdPersonMovement : MonoBehaviour
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         //change in-air movement by modifier
-        float currentSpeed = isGrounded ? speed : speed * airControlFactor;
+        float currentSpeed = isGrounded ? (isSprinting ? speed * speedMod : speed) : speed * airControlFactor;
 
         //only rotate to cam if not tricking
         if (direction.magnitude >= 0.1f && !isFlipping)
@@ -69,6 +72,14 @@ public class ThirdPersonMovement : MonoBehaviour
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
+
+        if (Input.GetKey(KeyCode.LeftShift) && isGrounded)
+        {
+            isSprinting = true;
+        }
+        else {
+            isSprinting = false;
         }
 
         //apply gravity
