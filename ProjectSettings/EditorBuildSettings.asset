@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Menu.unity
     guid: e5d2716f918a84680abc583cb79fbdbb
+  - enabled: 1
+    path: Assets/Scenes/Enemy Pathfinding.unity
+    guid: 8d6fda593842bdb469ff28d1fef8e00e
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
