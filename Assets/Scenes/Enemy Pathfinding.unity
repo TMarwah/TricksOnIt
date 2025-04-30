@@ -1317,6 +1317,7 @@ GameObject:
   - component: {fileID: 1454745759}
   - component: {fileID: 1454745761}
   - component: {fileID: 1454745760}
+  - component: {fileID: 1454745762}
   m_Layer: 0
   m_Name: Third Person Player
   m_TagString: Untagged
@@ -1358,14 +1359,14 @@ MonoBehaviour:
   speed: 8
   airControlFactor: 0.5
   turnSmoothTime: 0.1
-  jumpHeight: 6
+  jumpHeight: 4
   gravity: -10
   groundCheck: {fileID: 1885712114}
   groundDistance: 1e-18
   groundMask:
     serializedVersion: 2
     m_Bits: 1
-  airFlipSpeed: 600
+  airFlipSpeed: 500
 --- !u!143 &1454745761
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1391,6 +1392,21 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1454745762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1454745758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3c535e1aada8b64492f8869fcaa41b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackRange: 5
+  attackAngle: 45
+  knockbackForce: 50
 --- !u!1 &1475367149
 GameObject:
   m_ObjectHideFlags: 0

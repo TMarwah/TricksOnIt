@@ -9,6 +9,9 @@ public class EnemyChase : MonoBehaviour {
     }
 
     void Update() {
-        agent.SetDestination(player.position);
+        if (agent != null) 
+        {
+            agent.SetDestination(player.position);
+        }
     }
 }
