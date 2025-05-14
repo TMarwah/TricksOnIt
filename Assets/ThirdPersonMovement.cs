@@ -7,6 +7,8 @@ public class ThirdPersonMovement : MonoBehaviour
 {
     public CharacterController controller;
     public Transform camTransform;
+    public Transform model;
+    public Animator animator;
 
     [Header("Movement")]
     public float speed = 6f;
@@ -37,7 +39,7 @@ public class ThirdPersonMovement : MonoBehaviour
     public GameObject wallJumpVFXPrefab;
 
     Vector3 velocity;
-    bool isGrounded;
+    public bool isGrounded;
     bool isFlipping;
     bool isSprinting;
     bool isTouchingWall;
@@ -59,6 +61,8 @@ public class ThirdPersonMovement : MonoBehaviour
     void Update()
     {
         isGrounded = controller.isGrounded;
+        animator.SetFloat("airSpeed", velocity.y);
+        animator.SetBool("isGrounded", isGrounded);
 
         if (isGrounded)
         {
@@ -193,4 +197,9 @@ public class ThirdPersonMovement : MonoBehaviour
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
     }
+    public void PlungeDownward(float force)
+    {
+        velocity.y = -Mathf.Abs(force);
+    }
 }
+
