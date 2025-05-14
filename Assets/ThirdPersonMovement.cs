@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.VFX; // Import VFX Graph namespace
 using System.Collections;
 
 public class ThirdPersonMovement : MonoBehaviour
@@ -9,15 +10,15 @@ public class ThirdPersonMovement : MonoBehaviour
     public Transform model;
     public Animator animator;
 
-    [Header("Movement")] //player movement params
+    [Header("Movement")]
     public float speed = 6f;
     public float speedMod = 2f;
-    public float airControlFactor = 0.5f;  // Reduced movement speed in the air
+    public float airControlFactor = 0.5f;
     public float boostedAirControlFactor = 1.2f;
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
 
-    [Header("Jumping")] //jump params
+    [Header("Jumping")]
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
     public Transform groundCheck;
@@ -31,8 +32,9 @@ public class ThirdPersonMovement : MonoBehaviour
     public float wallJumpVerticalBoost = 5f;
     public float wallJumpHorizontalBoost = 5f;
 
-    [Header("Air Rotation")] //flip params
-    public float airFlipSpeed = 360f; // degrees per second
+    [Header("Air Rotation")]
+    public float airFlipSpeed = 360f;
+
     // Reference for the VFX Graph
     public GameObject wallJumpVFXPrefab;
 
@@ -40,6 +42,14 @@ public class ThirdPersonMovement : MonoBehaviour
     public bool isGrounded;
     bool isFlipping;
     bool isSprinting;
+    bool isTouchingWall;
+
+    bool justWallJumped = false;
+    float airControlMultiplier;
+
+    Vector3 lastWallNormal = Vector3.zero;
+    float wallNormalResetTime = 0.5f;
+    float wallNormalTimer = 0f;
 
     bool isTouchingWall;
 
@@ -120,12 +130,17 @@ public class ThirdPersonMovement : MonoBehaviour
                 animator.SetBool("isWalking", false);
             }
         }
+
+        isTouchingWall = Physics.CheckSphere(wallCheck.position, wallCheckRadius, wallMask);
+
+        if (wallNormalTimer > 0f)
+            wallNormalTimer -= Time.deltaTime;
         else
-        {
-            animator.SetFloat("Horizontal", 0f);
-            animator.SetFloat("Vertical", 0f);
-            animator.SetBool("isWalking", false);
-        }
+            lastWallNormal = Vector3.zero;
+
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+        Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         //jump input check
         if (Input.GetButtonDown("Jump"))
@@ -147,22 +162,19 @@ public class ThirdPersonMovement : MonoBehaviour
         {
             velocity.y += gravity * Time.deltaTime;
         }
+
         controller.Move(velocity * Time.deltaTime);
 
-        //flip manager, only in air
         if (!isGrounded && !isFlipping)
         {
             if (Input.GetKeyDown(KeyCode.R))
-                StartCoroutine(PerformFlip(Vector3.right));  //front flip
-
+                StartCoroutine(PerformFlip(Vector3.right));
             else if (Input.GetKeyDown(KeyCode.F))
-                StartCoroutine(PerformFlip(Vector3.left));   //back flip
-
+                StartCoroutine(PerformFlip(Vector3.left));
             else if (Input.GetKeyDown(KeyCode.Q))
-                StartCoroutine(PerformFlip(Vector3.up));     //left roll
-
+                StartCoroutine(PerformFlip(Vector3.up));
             else if (Input.GetKeyDown(KeyCode.E))
-                StartCoroutine(PerformFlip(Vector3.down));   //right roll
+                StartCoroutine(PerformFlip(Vector3.down));
         }
     }
 
@@ -202,17 +214,15 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         isFlipping = true;
         float rotated = 0f;
-        float rotationPerFrame;
 
         while (rotated < 360f)
         {
-            rotationPerFrame = airFlipSpeed * Time.deltaTime;
+            float rotationPerFrame = airFlipSpeed * Time.deltaTime;
             transform.Rotate(localAxis * rotationPerFrame, Space.Self);
             rotated += rotationPerFrame;
             yield return null;
         }
 
-        //snap rot
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
     }
