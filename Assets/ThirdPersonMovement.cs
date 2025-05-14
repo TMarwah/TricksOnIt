@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.VFX; // Import VFX Graph namespace
 using System.Collections;
 
 public class ThirdPersonMovement : MonoBehaviour
@@ -7,52 +8,87 @@ public class ThirdPersonMovement : MonoBehaviour
     public CharacterController controller;
     public Transform camTransform;
 
-    [Header("Movement")] //player movement params
+    [Header("Movement")]
     public float speed = 6f;
     public float speedMod = 2f;
-    public float airControlFactor = 0.5f;  // Reduced movement speed in the air
+    public float airControlFactor = 0.5f;
+    public float boostedAirControlFactor = 1.2f;
     public float turnSmoothTime = 0.1f;
     float turnSmoothVelocity;
 
-    [Header("Jumping")] //jump params
+    [Header("Jumping")]
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
     public Transform groundCheck;
     public float groundDistance = 0.3f;
     public LayerMask groundMask;
 
-    [Header("Air Rotation")] //flip params
-    public float airFlipSpeed = 360f; // degrees per second
+    [Header("Wall Jump")]
+    public Transform wallCheck;
+    public float wallCheckRadius = 0.5f;
+    public LayerMask wallMask;
+    public float wallJumpVerticalBoost = 5f;
+    public float wallJumpHorizontalBoost = 5f;
+
+    [Header("Air Rotation")]
+    public float airFlipSpeed = 360f;
+
+    // Reference for the VFX Graph
+    public GameObject wallJumpVFXPrefab;
 
     Vector3 velocity;
     bool isGrounded;
     bool isFlipping;
     bool isSprinting;
+    bool isTouchingWall;
+
+    bool justWallJumped = false;
+    float airControlMultiplier;
+
+    Vector3 lastWallNormal = Vector3.zero;
+    float wallNormalResetTime = 0.5f;
+    float wallNormalTimer = 0f;
 
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
+        airControlMultiplier = airControlFactor;
     }
 
     void Update()
     {
         isGrounded = controller.isGrounded;
 
-        if (isGrounded && velocity.y < 0)
+        if (isGrounded)
         {
-            velocity.y = -2f;
+            if (velocity.y < 0)
+                velocity.y = -2f;
+
+            velocity.x = 0f;
+            velocity.z = 0f;
+
+            justWallJumped = false;
+            airControlMultiplier = airControlFactor;
+
+            lastWallNormal = Vector3.zero; // allow re-jumping from same wall later
         }
 
-        //get input from keys
+        isTouchingWall = Physics.CheckSphere(wallCheck.position, wallCheckRadius, wallMask);
+
+        if (wallNormalTimer > 0f)
+            wallNormalTimer -= Time.deltaTime;
+        else
+            lastWallNormal = Vector3.zero;
+
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
-        //change in-air movement by modifier
-        float currentSpeed = isGrounded ? (isSprinting ? speed * speedMod : speed) : speed * airControlFactor;
+        float currentSpeed = isGrounded
+            ? (isSprinting ? speed * speedMod : speed)
+            : speed * airControlMultiplier;
 
-        //only rotate to cam if not tricking
         if (direction.magnitude >= 0.1f && !isFlipping)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
@@ -60,64 +96,100 @@ public class ThirdPersonMovement : MonoBehaviour
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
         }
 
-        //char movement
-        if (direction.magnitude >= 0.1f)
+        if (direction.magnitude >= 0.1f && isGrounded)
         {
             float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
             Vector3 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
             controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
         }
 
-        //jump input check
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if (!isGrounded && direction.magnitude >= 0.1f)
         {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
+            Vector3 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
+            Vector3 airControl = moveDir.normalized * currentSpeed * Time.deltaTime;
+            controller.Move(airControl);
         }
 
-        if (Input.GetKey(KeyCode.LeftShift) && isGrounded)
+        if (Input.GetButtonDown("Jump"))
         {
-            isSprinting = true;
-        }
-        else {
-            isSprinting = false;
+            if (isGrounded)
+            {
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            }
+            else if (isTouchingWall && CanWallJump())
+            {
+                PerformWallJump();
+            }
         }
 
-        //apply gravity
-        velocity.y += gravity * Time.deltaTime;
+        isSprinting = Input.GetKey(KeyCode.LeftShift) && isGrounded;
+
+        if (!isGrounded)
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
         controller.Move(velocity * Time.deltaTime);
 
-        //flip manager, only in air
         if (!isGrounded && !isFlipping)
         {
             if (Input.GetKeyDown(KeyCode.R))
-                StartCoroutine(PerformFlip(Vector3.right));  //front flip
-
+                StartCoroutine(PerformFlip(Vector3.right));
             else if (Input.GetKeyDown(KeyCode.F))
-                StartCoroutine(PerformFlip(Vector3.left));   //back flip
-
+                StartCoroutine(PerformFlip(Vector3.left));
             else if (Input.GetKeyDown(KeyCode.Q))
-                StartCoroutine(PerformFlip(Vector3.up));     //left roll
-
+                StartCoroutine(PerformFlip(Vector3.up));
             else if (Input.GetKeyDown(KeyCode.E))
-                StartCoroutine(PerformFlip(Vector3.down));   //right roll
+                StartCoroutine(PerformFlip(Vector3.down));
         }
+    }
+
+    private bool CanWallJump()
+    {
+        Vector3 currentWallNormal = (transform.position - wallCheck.position).normalized;
+
+        // Compare against previous wall normal
+        return lastWallNormal == Vector3.zero ||
+               Vector3.Angle(currentWallNormal, lastWallNormal) > 15f;
+    }
+
+    private void PerformWallJump()
+    {
+        Vector3 wallNormal = (transform.position - wallCheck.position).normalized;
+        Vector3 jumpDirection = (wallNormal + Vector3.up).normalized;
+
+        velocity = jumpDirection * wallJumpHorizontalBoost;
+        velocity.y = wallJumpVerticalBoost;
+
+        justWallJumped = true;
+        airControlMultiplier = boostedAirControlFactor;
+
+        lastWallNormal = wallNormal;
+        wallNormalTimer = wallNormalResetTime;
+
+        // Instantiate VFX Graph at the wall jump position
+        if (wallJumpVFXPrefab != null)
+        {
+            Instantiate(wallJumpVFXPrefab, transform.position, Quaternion.identity);
+        }
+
+        Debug.Log("Wall Jump performed!");
     }
 
     IEnumerator PerformFlip(Vector3 localAxis)
     {
         isFlipping = true;
         float rotated = 0f;
-        float rotationPerFrame;
 
         while (rotated < 360f)
         {
-            rotationPerFrame = airFlipSpeed * Time.deltaTime;
+            float rotationPerFrame = airFlipSpeed * Time.deltaTime;
             transform.Rotate(localAxis * rotationPerFrame, Space.Self);
             rotated += rotationPerFrame;
             yield return null;
         }
 
-        //snap rot
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
     }
