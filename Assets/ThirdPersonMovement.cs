@@ -6,6 +6,8 @@ public class ThirdPersonMovement : MonoBehaviour
 {
     public CharacterController controller;
     public Transform camTransform;
+    public Transform model;
+    public Animator animator;
 
     [Header("Movement")] //player movement params
     public float speed = 6f;
@@ -25,7 +27,7 @@ public class ThirdPersonMovement : MonoBehaviour
     public float airFlipSpeed = 360f; // degrees per second
 
     Vector3 velocity;
-    bool isGrounded;
+    public bool isGrounded;
     bool isFlipping;
     bool isSprinting;
 
@@ -38,6 +40,8 @@ public class ThirdPersonMovement : MonoBehaviour
     void Update()
     {
         isGrounded = controller.isGrounded;
+        animator.SetFloat("airSpeed", velocity.y);
+        animator.SetBool("isGrounded", isGrounded);
 
         if (isGrounded && velocity.y < 0)
         {
@@ -48,6 +52,23 @@ public class ThirdPersonMovement : MonoBehaviour
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+
+        // Only apply movement values when moving
+        if (direction.magnitude > 0.1f)
+        {
+            // Convert input direction to local space (relative to character's forward)
+            Vector3 localDir = transform.InverseTransformDirection(direction);
+
+            animator.SetFloat("Horizontal", localDir.x);
+            animator.SetFloat("Vertical", localDir.z);
+            animator.SetBool("isWalking", true);
+        }
+        else
+        {
+            animator.SetFloat("Horizontal", 0f);
+            animator.SetFloat("Vertical", 0f);
+            animator.SetBool("isWalking", false);
+        }
 
         //change in-air movement by modifier
         float currentSpeed = isGrounded ? (isSprinting ? speed * speedMod : speed) : speed * airControlFactor;
@@ -72,14 +93,17 @@ public class ThirdPersonMovement : MonoBehaviour
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            animator.SetTrigger("JumpTrigger");
         }
 
         if (Input.GetKey(KeyCode.LeftShift) && isGrounded)
         {
             isSprinting = true;
+            animator.SetBool("isSprinting", true);
         }
         else {
             isSprinting = false;
+            animator.SetBool("isSprinting", false);
         }
 
         //apply gravity
@@ -121,4 +145,9 @@ public class ThirdPersonMovement : MonoBehaviour
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
     }
+    public void PlungeDownward(float force)
+    {
+        velocity.y = -Mathf.Abs(force);
+    }
 }
+
