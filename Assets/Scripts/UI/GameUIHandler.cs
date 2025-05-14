@@ -23,10 +23,12 @@ public class GameUIHandler : MonoBehaviour
         
     void HealthChanged()
     {
+        Debug.Log("[GameUIHandler] HealthChanged event received.");
+
+        float normalized = PlayerHealth.HealthNormalized();
         m_HealthLabel.text = $"{PlayerHealth.CurrentHealth}/{PlayerHealth.MaxHealth}";
 
-        float healthRatio = (float)PlayerHealth.CurrentHealth / PlayerHealth.MaxHealth;
-        float healthPercent = Mathf.Lerp(8, 88, healthRatio);
-        m_HealthBarMask.style.width = Length.Percent(healthPercent);
+        // full bar width is 100% 
+        m_HealthBarMask.style.width = Length.Percent(normalized * 100f);
     }
 }
