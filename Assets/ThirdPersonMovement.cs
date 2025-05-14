@@ -51,6 +51,15 @@ public class ThirdPersonMovement : MonoBehaviour
     float wallNormalResetTime = 0.5f;
     float wallNormalTimer = 0f;
 
+    bool isTouchingWall;
+
+    bool justWallJumped = false;
+    float airControlMultiplier;
+
+    Vector3 lastWallNormal = Vector3.zero;
+    float wallNormalResetTime = 0.5f;
+    float wallNormalTimer = 0f;
+
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -85,6 +94,7 @@ public class ThirdPersonMovement : MonoBehaviour
         else
             lastWallNormal = Vector3.zero;
 
+        //get input from keys
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
@@ -93,33 +103,51 @@ public class ThirdPersonMovement : MonoBehaviour
             ? (isSprinting ? speed * speedMod : speed)
             : speed * airControlMultiplier;
 
-        if (direction.magnitude >= 0.1f && !isFlipping)
+        // Only apply movement values when moving
+        if (direction.magnitude >= 0.1f)
         {
-            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
+            // Convert input direction to local space (relative to character's forward)
+            Vector3 localDir = transform.InverseTransformDirection(direction);
+
+            animator.SetFloat("Horizontal", localDir.x);
+            animator.SetFloat("Vertical", localDir.z);
+
+            if (!isFlipping) {
+                float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
+                float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
+                transform.rotation = Quaternion.Euler(0f, angle, 0f);
+            }
+            if (isGrounded) {
+                float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
+                Vector3 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
+                controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
+                animator.SetBool("isWalking", true);
+            } else {
+                float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
+                Vector3 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
+                Vector3 airControl = moveDir.normalized * currentSpeed * Time.deltaTime;
+                controller.Move(airControl);
+                animator.SetBool("isWalking", false);
+            }
         }
 
-        if (direction.magnitude >= 0.1f && isGrounded)
-        {
-            float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
-            Vector3 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
-            controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
-        }
+        isTouchingWall = Physics.CheckSphere(wallCheck.position, wallCheckRadius, wallMask);
 
-        if (!isGrounded && direction.magnitude >= 0.1f)
-        {
-            float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
-            Vector3 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
-            Vector3 airControl = moveDir.normalized * currentSpeed * Time.deltaTime;
-            controller.Move(airControl);
-        }
+        if (wallNormalTimer > 0f)
+            wallNormalTimer -= Time.deltaTime;
+        else
+            lastWallNormal = Vector3.zero;
 
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+        Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+
+        //jump input check
         if (Input.GetButtonDown("Jump"))
         {
-            if (isGrounded)
-            {
+            if (isGrounded) {
                 velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                animator.SetTrigger("JumpTrigger");
             }
             else if (isTouchingWall && CanWallJump())
             {
@@ -128,6 +156,7 @@ public class ThirdPersonMovement : MonoBehaviour
         }
 
         isSprinting = Input.GetKey(KeyCode.LeftShift) && isGrounded;
+        animator.SetBool("isSprinting", isSprinting);
 
         if (!isGrounded)
         {
@@ -200,7 +229,6 @@ public class ThirdPersonMovement : MonoBehaviour
     public void PlungeDownward(float force)
     {
         velocity.y = -Mathf.Abs(force);
-        //s
     }
 }
 
