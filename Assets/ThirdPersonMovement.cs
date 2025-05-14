@@ -148,6 +148,7 @@ public class ThirdPersonMovement : MonoBehaviour
     public void PlungeDownward(float force)
     {
         velocity.y = -Mathf.Abs(force);
+        //s
     }
 }
 
