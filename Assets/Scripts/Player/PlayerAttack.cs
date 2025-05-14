@@ -5,29 +5,89 @@ public class PlayerAttack : MonoBehaviour {
     public float attackRange = 3f;
     public float attackAngle = 90f; // half-angle of cone
     public float knockbackForce = 10f;
+    public float plungingAttackForce = 20f;
+    public Animator animator;
+    public GameObject hitSparkPrefab;
+    public GameObject plungeAttackVFXPrefab;
+    private ThirdPersonMovement playerController;
+    public GameObject plungeVFXPrefab;
+
+    private bool didPlungeAttack = false;
+    private bool wasGroundedLastFrame = true;
+
+    void Start() {
+        playerController = GetComponent<ThirdPersonMovement>();
+    }
 
     void Update() {
-        if (Input.GetMouseButtonDown(0)) {
-            PerformAttack();
+        // Detect plunge attack input
+        if (Input.GetMouseButtonDown(0) && playerController.isGrounded) {
+            PerformLightAttack();
+        }
+        else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded) {
+            PerformPlungingAttack();
+        }
+
+        // Detect landing after plunge
+        if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame) {
+            PlayPlungeVFX();
+            didPlungeAttack = false;
+        }
+
+        wasGroundedLastFrame = playerController.isGrounded;
+    }
+
+    void PerformLightAttack() {
+        animator.SetTrigger("LightAttack");
+        DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
+    }
+
+    void PerformPlungingAttack()
+    {
+        playerController.PlungeDownward(plungingAttackForce); // force player down
+        DealDamageToEnemies(attackRange, 360f, plungingAttackForce); // full AoE
+        // if (plungeVFXPrefab != null)
+        // {
+        //     RaycastHit hitInfo;
+        //     if (Physics.Raycast(transform.position, Vector3.down, out hitInfo, 10f))
+        //     {
+        //         Instantiate(plungeVFXPrefab, hitInfo.point, Quaternion.identity);
+        //     }
+        //     else
+        //     {
+        //         Instantiate(plungeVFXPrefab, transform.position, Quaternion.identity);
+        //     }
+            didPlungeAttack = true;
+        // }
+    }
+
+    void PlayPlungeVFX() {
+        if (plungeAttackVFXPrefab != null) {
+            Instantiate(plungeAttackVFXPrefab, transform.position, Quaternion.identity);
         }
     }
 
-    void PerformAttack() {
-        Collider[] hits = Physics.OverlapSphere(transform.position, attackRange);
+    void DealDamageToEnemies(float range, float angle, float force) {
+        Collider[] hits = Physics.OverlapSphere(transform.position, range);
         Vector3 forward = transform.forward;
 
         foreach (Collider hit in hits) {
             if (hit.CompareTag("Enemy")) {
-                Debug.Log($"Hit enemy!");
                 Vector3 toTarget = (hit.transform.position - transform.position).normalized;
-                float angle = Vector3.Angle(forward, toTarget);
+                float currentAngle = Vector3.Angle(forward, toTarget);
 
-                if (angle <= attackAngle) {
+                if (currentAngle <= angle || angle == 360f) {
                     Rigidbody rb = hit.GetComponent<Rigidbody>();
                     UnityEngine.AI.NavMeshAgent agent = hit.GetComponent<UnityEngine.AI.NavMeshAgent>();
                     if (agent != null && rb != null) {
-                        rb.AddForce(toTarget * knockbackForce, ForceMode.Impulse);
-                        StartCoroutine(KnockbackAgent(agent, rb, toTarget * knockbackForce, 1f));
+                        rb.AddForce(toTarget * force, ForceMode.Impulse);
+                        StartCoroutine(KnockbackAgent(agent, rb, toTarget * force, 1f));
+                    }
+                    // Play hit spark at enemy position
+                    if (hitSparkPrefab != null) {
+                        Vector3 hitDirection = -(hit.transform.position - transform.position).normalized;
+                        Quaternion sparkRotation = Quaternion.LookRotation(hitDirection, Vector3.up);
+                        Instantiate(hitSparkPrefab, hit.transform.position, sparkRotation);
                     }
                 }
             }
@@ -35,19 +95,9 @@ public class PlayerAttack : MonoBehaviour {
     }
 
     IEnumerator KnockbackAgent(UnityEngine.AI.NavMeshAgent agent, Rigidbody rb, Vector3 force, float duration) {
-        // Rotate the enemy by 45 degrees instantly
-        // transform.Rotate(0, 45, 0);
-
-        // Flash red
-        Renderer renderer = rb.GetComponent<Renderer>();
-        Color originalColor = renderer.material.color;
-        renderer.material.color = Color.red;
-
         agent.enabled = false;
         rb.linearVelocity = force;
         yield return new WaitForSeconds(duration);
-        // transform.Rotate(0,-45,0);
-        renderer.material.color = originalColor;
         agent.enabled = true;
     }
 }
