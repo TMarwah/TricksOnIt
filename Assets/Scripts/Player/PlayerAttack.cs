@@ -7,20 +7,34 @@ public class PlayerAttack : MonoBehaviour {
     public float knockbackForce = 10f;
     public float plungingAttackForce = 20f;
     public Animator animator;
+    public GameObject hitSparkPrefab;
+    public GameObject plungeAttackVFXPrefab;
     private ThirdPersonMovement playerController;
     public GameObject plungeVFXPrefab;
+
+    private bool didPlungeAttack = false;
+    private bool wasGroundedLastFrame = true;
 
     void Start() {
         playerController = GetComponent<ThirdPersonMovement>();
     }
 
     void Update() {
+        // Detect plunge attack input
         if (Input.GetMouseButtonDown(0) && playerController.isGrounded) {
             PerformLightAttack();
         }
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded) {
             PerformPlungingAttack();
         }
+
+        // Detect landing after plunge
+        if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame) {
+            PlayPlungeVFX();
+            didPlungeAttack = false;
+        }
+
+        wasGroundedLastFrame = playerController.isGrounded;
     }
 
     void PerformLightAttack() {
@@ -32,17 +46,24 @@ public class PlayerAttack : MonoBehaviour {
     {
         playerController.PlungeDownward(plungingAttackForce); // force player down
         DealDamageToEnemies(attackRange, 360f, plungingAttackForce); // full AoE
-        if (plungeVFXPrefab != null)
-        {
-            RaycastHit hitInfo;
-            if (Physics.Raycast(transform.position, Vector3.down, out hitInfo, 10f))
-            {
-                Instantiate(plungeVFXPrefab, hitInfo.point, Quaternion.identity);
-            }
-            else
-            {
-                Instantiate(plungeVFXPrefab, transform.position, Quaternion.identity);
-            }
+        // if (plungeVFXPrefab != null)
+        // {
+        //     RaycastHit hitInfo;
+        //     if (Physics.Raycast(transform.position, Vector3.down, out hitInfo, 10f))
+        //     {
+        //         Instantiate(plungeVFXPrefab, hitInfo.point, Quaternion.identity);
+        //     }
+        //     else
+        //     {
+        //         Instantiate(plungeVFXPrefab, transform.position, Quaternion.identity);
+        //     }
+            didPlungeAttack = true;
+        // }
+    }
+
+    void PlayPlungeVFX() {
+        if (plungeAttackVFXPrefab != null) {
+            Instantiate(plungeAttackVFXPrefab, transform.position, Quaternion.identity);
         }
     }
 
@@ -61,6 +82,12 @@ public class PlayerAttack : MonoBehaviour {
                     if (agent != null && rb != null) {
                         rb.AddForce(toTarget * force, ForceMode.Impulse);
                         StartCoroutine(KnockbackAgent(agent, rb, toTarget * force, 1f));
+                    }
+                    // Play hit spark at enemy position
+                    if (hitSparkPrefab != null) {
+                        Vector3 hitDirection = -(hit.transform.position - transform.position).normalized;
+                        Quaternion sparkRotation = Quaternion.LookRotation(hitDirection, Vector3.up);
+                        Instantiate(hitSparkPrefab, hit.transform.position, sparkRotation);
                     }
                 }
             }
