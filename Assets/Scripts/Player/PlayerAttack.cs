@@ -7,20 +7,33 @@ public class PlayerAttack : MonoBehaviour {
     public float knockbackForce = 10f;
     public float plungingAttackForce = 20f;
     public Animator animator;
-    public GameObject hitSparkPrefab; // <-- Add this line
+    public GameObject hitSparkPrefab;
+    public GameObject plungeAttackVFXPrefab;
     private ThirdPersonMovement playerController;
+
+    private bool didPlungeAttack = false;
+    private bool wasGroundedLastFrame = true;
 
     void Start() {
         playerController = GetComponent<ThirdPersonMovement>();
     }
 
     void Update() {
+        // Detect plunge attack input
         if (Input.GetMouseButtonDown(0) && playerController.isGrounded) {
             PerformLightAttack();
         }
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded) {
             PerformPlungingAttack();
         }
+
+        // Detect landing after plunge
+        if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame) {
+            PlayPlungeVFX();
+            didPlungeAttack = false;
+        }
+
+        wasGroundedLastFrame = playerController.isGrounded;
     }
 
     void PerformLightAttack() {
@@ -32,6 +45,13 @@ public class PlayerAttack : MonoBehaviour {
     {
         playerController.PlungeDownward(plungingAttackForce); // force player down
         DealDamageToEnemies(attackRange, 360f, plungingAttackForce); // full AoE
+        didPlungeAttack = true;
+    }
+
+    void PlayPlungeVFX() {
+        if (plungeAttackVFXPrefab != null) {
+            Instantiate(plungeAttackVFXPrefab, transform.position, Quaternion.identity);
+        }
     }
 
     void DealDamageToEnemies(float range, float angle, float force) {
