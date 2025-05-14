@@ -2,8 +2,12 @@ using System;
 using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(PlayerHealth))]
+
 public class ThirdPersonMovement : MonoBehaviour
 {
+
+
     public CharacterController controller;
     public Transform camTransform;
 
@@ -17,6 +21,7 @@ public class ThirdPersonMovement : MonoBehaviour
     [Header("Jumping")] //jump params
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
+    private PlayerHealth playerHealth;
     public Transform groundCheck;
     public float groundDistance = 0.3f;
     public LayerMask groundMask;
@@ -31,12 +36,18 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Start()
     {
+        playerHealth = GetComponent<PlayerHealth>();
+        controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
     }
 
     void Update()
     {
+        if (playerHealth != null && playerHealth.IsDead())
+        {
+            return;
+        }
         isGrounded = controller.isGrounded;
 
         if (isGrounded && velocity.y < 0)
