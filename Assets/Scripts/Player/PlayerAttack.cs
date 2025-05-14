@@ -8,6 +8,7 @@ public class PlayerAttack : MonoBehaviour {
     public float plungingAttackForce = 20f;
     public Animator animator;
     private ThirdPersonMovement playerController;
+    public GameObject plungeVFXPrefab;
 
     void Start() {
         playerController = GetComponent<ThirdPersonMovement>();
@@ -31,6 +32,18 @@ public class PlayerAttack : MonoBehaviour {
     {
         playerController.PlungeDownward(plungingAttackForce); // force player down
         DealDamageToEnemies(attackRange, 360f, plungingAttackForce); // full AoE
+        if (plungeVFXPrefab != null)
+        {
+            RaycastHit hitInfo;
+            if (Physics.Raycast(transform.position, Vector3.down, out hitInfo, 10f))
+            {
+                Instantiate(plungeVFXPrefab, hitInfo.point, Quaternion.identity);
+            }
+            else
+            {
+                Instantiate(plungeVFXPrefab, transform.position, Quaternion.identity);
+            }
+        }
     }
 
     void DealDamageToEnemies(float range, float angle, float force) {

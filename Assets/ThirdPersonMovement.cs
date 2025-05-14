@@ -120,6 +120,10 @@ public class ThirdPersonMovement : MonoBehaviour
                 controller.Move(airControl);
                 animator.SetBool("isWalking", false);
             }
+        } else {
+            animator.SetFloat("Horizontal", 0f);
+            animator.SetFloat("Vertical", 0f);
+            animator.SetBool("isWalking", false);
         }
 
         isTouchingWall = Physics.CheckSphere(wallCheck.position, wallCheckRadius, wallMask);
