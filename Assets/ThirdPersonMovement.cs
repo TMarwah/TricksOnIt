@@ -51,15 +51,6 @@ public class ThirdPersonMovement : MonoBehaviour
     float wallNormalResetTime = 0.5f;
     float wallNormalTimer = 0f;
 
-    bool isTouchingWall;
-
-    bool justWallJumped = false;
-    float airControlMultiplier;
-
-    Vector3 lastWallNormal = Vector3.zero;
-    float wallNormalResetTime = 0.5f;
-    float wallNormalTimer = 0f;
-
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -137,10 +128,6 @@ public class ThirdPersonMovement : MonoBehaviour
             wallNormalTimer -= Time.deltaTime;
         else
             lastWallNormal = Vector3.zero;
-
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        float vertical = Input.GetAxisRaw("Vertical");
-        Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         //jump input check
         if (Input.GetButtonDown("Jump"))
