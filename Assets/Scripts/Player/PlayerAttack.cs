@@ -7,6 +7,7 @@ public class PlayerAttack : MonoBehaviour {
     public float knockbackForce = 10f;
     public float plungingAttackForce = 20f;
     public Animator animator;
+    public GameObject hitSparkPrefab; // <-- Add this line
     private ThirdPersonMovement playerController;
 
     void Start() {
@@ -48,6 +49,12 @@ public class PlayerAttack : MonoBehaviour {
                     if (agent != null && rb != null) {
                         rb.AddForce(toTarget * force, ForceMode.Impulse);
                         StartCoroutine(KnockbackAgent(agent, rb, toTarget * force, 1f));
+                    }
+                    // Play hit spark at enemy position
+                    if (hitSparkPrefab != null) {
+                        Vector3 hitDirection = -(hit.transform.position - transform.position).normalized;
+                        Quaternion sparkRotation = Quaternion.LookRotation(hitDirection, Vector3.up);
+                        Instantiate(hitSparkPrefab, hit.transform.position, sparkRotation);
                     }
                 }
             }
