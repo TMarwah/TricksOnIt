@@ -7,8 +7,6 @@ using System.Collections;
 
 public class ThirdPersonMovement : MonoBehaviour
 {
-
-
     public CharacterController controller;
     public Transform camTransform;
     public Transform model;
@@ -40,6 +38,10 @@ public class ThirdPersonMovement : MonoBehaviour
 
     [Header("Air Rotation")]
     public float airFlipSpeed = 360f;
+
+    [Header("Aiming")]
+    public bool isAiming = false; // exposed for PlayerAttack to toggle
+    public float aimSpeedMultiplier = 0.4f;
 
     // Reference for the VFX Graph
     public GameObject wallJumpVFXPrefab;
@@ -103,7 +105,7 @@ public class ThirdPersonMovement : MonoBehaviour
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         float currentSpeed = isGrounded
-            ? (isSprinting ? speed * speedMod : speed)
+            ? (isAiming ? speed * aimSpeedMultiplier : (isSprinting ? speed * speedMod : speed))
             : speed * airControlMultiplier;
 
         Vector3 moveDir = Vector3.zero;
@@ -116,7 +118,7 @@ public class ThirdPersonMovement : MonoBehaviour
             animator.SetFloat("Horizontal", localDir.x);
             animator.SetFloat("Vertical", localDir.z);
 
-            if (!isFlipping) {
+            if (!isFlipping && !isAiming) {
                 float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
                 transform.rotation = Quaternion.Euler(0f, angle, 0f);
@@ -148,21 +150,19 @@ public class ThirdPersonMovement : MonoBehaviour
             lastWallNormal = Vector3.zero;
 
         //jump input check
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
         {
-            if (isGrounded) {
-                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                velocity.x = horizontalVelocity.x * airControlFactor;
-                velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
-                animator.SetTrigger("JumpTrigger");
-            }
-            else if (isTouchingWall && CanWallJump())
-            {
-                PerformWallJump();
-            }
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            velocity.x = horizontalVelocity.x * airControlFactor;
+            velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
+            animator.SetTrigger("JumpTrigger");
+        }
+        else if (Input.GetButtonDown("Jump") && isTouchingWall && CanWallJump())
+        {
+            PerformWallJump();
         }
 
-        isSprinting = Input.GetKey(KeyCode.LeftShift) && isGrounded;
+        isSprinting = Input.GetKey(KeyCode.LeftShift) && isGrounded && !isAiming;
         animator.SetBool("isSprinting", isSprinting);
 
         if (!isGrounded)
@@ -233,9 +233,9 @@ public class ThirdPersonMovement : MonoBehaviour
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
     }
+
     public void PlungeDownward(float force)
     {
         velocity.y = -Mathf.Abs(force);
     }
 }
-

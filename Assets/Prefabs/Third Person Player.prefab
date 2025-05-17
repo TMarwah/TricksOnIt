@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 9091720146112881752}
   - component: {fileID: 5186600968599660094}
   - component: {fileID: 8763516684770596977}
+  - component: {fileID: 4721867367232416220}
   m_Layer: 0
   m_Name: Third Person Player
   m_TagString: Untagged
@@ -96,6 +97,8 @@ MonoBehaviour:
   wallJumpVerticalBoost: 7
   wallJumpHorizontalBoost: 6
   airFlipSpeed: 800
+  isAiming: 0
+  aimSpeedMultiplier: 0.4
   wallJumpVFXPrefab: {fileID: 0}
   isGrounded: 0
 --- !u!114 &8763516684770596977
@@ -115,7 +118,34 @@ MonoBehaviour:
   knockbackForce: 10
   plungingAttackForce: 20
   animator: {fileID: 2777390412156655253}
-  plungeVFXPrefab: {fileID: 0}
+  rangedAttackRange: 8
+  rangedAttackAngle: 60
+  rangedKnockbackForce: 5
+  rangedSplashRadius: 1.5
+  pelletsPerShot: 3
+  handCooldown: 0.5
+  hitSparkPrefab: {fileID: 3500883190020426963, guid: 9e15fafdf3d8784419547a150bdfc53a, type: 3}
+  plungeAttackVFXPrefab: {fileID: 0}
+  camTransform: {fileID: 0}
+  zoomFOV: 40
+  normalFOV: 60
+  zoomSpeed: 5
+  virtualCamera: {fileID: 0}
+--- !u!114 &4721867367232416220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2127766537862334118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ea5c1c37ac10456680020004a4169ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxHealth: 100
+  _currentHealth: 0
+  healthDrainRate: 1
 --- !u!1 &5911128185744837586
 GameObject:
   m_ObjectHideFlags: 0
