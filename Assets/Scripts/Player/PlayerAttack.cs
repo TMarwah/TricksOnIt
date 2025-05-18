@@ -11,6 +11,10 @@ public class PlayerAttack : MonoBehaviour
     public float plungingAttackForce = 20f;
     public Animator animator;
 
+    [Header("Light Attack")]
+    public float lightAttackCooldown = 0.3f;
+    private float lightAttackTimer = 0f;
+
     [Header("Ranged Attack")]
     public float rangedAttackRange = 8f;
     public float rangedAttackAngle = 60f;
@@ -41,6 +45,7 @@ public class PlayerAttack : MonoBehaviour
     {
         leftCooldownTimer -= Time.deltaTime;
         rightCooldownTimer -= Time.deltaTime;
+        lightAttackTimer -= Time.deltaTime;
 
         // Maintain aiming while either Q or R is held down
         bool leftHeld = Input.GetKey(KeyCode.Q);
@@ -49,6 +54,7 @@ public class PlayerAttack : MonoBehaviour
         // Update aiming state on player and local flag
         isAiming = playerController.isGrounded && (leftHeld || rightHeld);
         playerController.isAiming = isAiming;
+        animator.SetBool("isAiming", isAiming);
 
         // Fire left hand shot if cooldown allows and key held
         if (leftHeld && leftCooldownTimer <= 0f && playerController.isGrounded)
@@ -65,9 +71,10 @@ public class PlayerAttack : MonoBehaviour
         }
 
         // Other attack input handling unchanged
-        if (Input.GetMouseButtonDown(0) && playerController.isGrounded)
+        if (Input.GetMouseButtonDown(0) && playerController.isGrounded && lightAttackTimer <= 0f)
         {
             PerformLightAttack();
+            lightAttackTimer = lightAttackCooldown;
         }
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded)
         {
@@ -85,9 +92,6 @@ public class PlayerAttack : MonoBehaviour
 
     IEnumerator PerformRangedAttack(string hand)
     {
-        isAiming = true;
-        playerController.isAiming = true;
-
         animator.SetTrigger(hand == "Left" ? "ShootLeft" : "ShootRight");
 
         for (int i = 0; i < pelletsPerShot; i++)
@@ -100,10 +104,6 @@ public class PlayerAttack : MonoBehaviour
             }
             yield return new WaitForSeconds(0.05f);
         }
-
-        yield return new WaitForSeconds(0.15f);
-        isAiming = false;
-        playerController.isAiming = false;
     }
 
     Transform FindEnemyInSprayCone(float range, float angle)
@@ -178,7 +178,6 @@ public class PlayerAttack : MonoBehaviour
                     StartCoroutine(KnockbackAgent(agent, rb, toEnemy * force, 0.2f));
                 }
 
-                // 💥 NEW: Apply splash damage
                 EnemyHealth health = enemy.GetComponent<EnemyHealth>();
                 if (health != null)
                 {
@@ -239,7 +238,6 @@ public class PlayerAttack : MonoBehaviour
                         StartCoroutine(KnockbackAgent(agent, rb, toTarget * force, 1f));
                     }
 
-                    // 💥 NEW: Apply melee damage
                     EnemyHealth health = hit.GetComponent<EnemyHealth>();
                     if (health != null)
                     {
