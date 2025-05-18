@@ -12,11 +12,13 @@ public class PlayerCamera : MonoBehaviour
     public float fovLerpSpeed = 5f;
     private float currentFOV;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    void Awake()
     {
         player = GetComponent<ThirdPersonMovement>();
+        virtualCamera = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
         if (virtualCamera != null)
         {
+            camTransform = virtualCamera.transform;
             currentFOV = virtualCamera.Lens.FieldOfView;
         }
     }

@@ -59,10 +59,27 @@ public class ThirdPersonMovement : MonoBehaviour
     float wallNormalResetTime = 0.5f;
     float wallNormalTimer = 0f;
 
+    void Awake()
+    {
+        controller = GetComponent<CharacterController>();
+        playerHealth = GetComponent<PlayerHealth>();
+
+        Animator foundAnimator = GetComponentInChildren<Animator>();
+        if (foundAnimator != null)
+        {
+            animator = foundAnimator;
+            model = animator.transform;
+        }
+
+        var cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+        if (cineCam != null)
+        {
+            camTransform = cineCam.transform;
+        }
+    }
+
     void Start()
     {
-        playerHealth = GetComponent<PlayerHealth>();
-        controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
         airControlMultiplier = airControlFactor;
