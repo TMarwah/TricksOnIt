@@ -43,6 +43,14 @@ public class ThirdPersonMovement : MonoBehaviour
     public bool isAiming = false; // exposed for PlayerAttack to toggle
     public float aimSpeedMultiplier = 0.4f;
 
+    [Header("Camera FOV")]
+    public Unity.Cinemachine.CinemachineCamera virtualCamera;
+    public float normalFOV = 60f;
+    public float sprintFOV = 70f;
+    public float aimFOV = 40f;
+    public float fovLerpSpeed = 5f;
+    private float currentFOV;
+
     // Reference for the VFX Graph
     public GameObject wallJumpVFXPrefab;
 
@@ -66,6 +74,11 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
         airControlMultiplier = airControlFactor;
+
+        if (virtualCamera != null)
+        {
+            currentFOV = virtualCamera.Lens.FieldOfView;
+        }
     }
 
     void Update()
@@ -118,24 +131,30 @@ public class ThirdPersonMovement : MonoBehaviour
             animator.SetFloat("Horizontal", localDir.x);
             animator.SetFloat("Vertical", localDir.z);
 
-            if (!isFlipping && !isAiming) {
+            if (!isFlipping && !isAiming)
+            {
                 float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
                 transform.rotation = Quaternion.Euler(0f, angle, 0f);
             }
-            if (isGrounded) {
+            if (isGrounded)
+            {
                 float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
                 controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
                 animator.SetBool("isWalking", true);
-            } else {
+            }
+            else
+            {
                 float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
                 Vector3 airControl = moveDir.normalized * currentSpeed * Time.deltaTime;
                 controller.Move(airControl);
                 animator.SetBool("isWalking", false);
             }
-        } else {
+        }
+        else
+        {
             animator.SetFloat("Horizontal", 0f);
             animator.SetFloat("Vertical", 0f);
             animator.SetBool("isWalking", false);
@@ -182,6 +201,40 @@ public class ThirdPersonMovement : MonoBehaviour
                 StartCoroutine(PerformFlip(Vector3.up));
             else if (Input.GetKeyDown(KeyCode.E))
                 StartCoroutine(PerformFlip(Vector3.down));
+        }
+        UpdateCameraFOV();
+    }
+
+    void UpdateCameraFOV()
+    {
+        if (virtualCamera == null) return;
+
+        float targetFOV = normalFOV;
+
+        if (isAiming)
+        {
+            targetFOV = aimFOV;
+            FaceCamera();
+        }
+        else if (isSprinting)
+        {
+            targetFOV = sprintFOV;
+        }
+
+        currentFOV = Mathf.Lerp(currentFOV, targetFOV, Time.deltaTime * fovLerpSpeed);
+        var lens = virtualCamera.Lens;
+        lens.FieldOfView = currentFOV;
+        virtualCamera.Lens = lens;
+    }
+
+    void FaceCamera()
+    {
+        Vector3 cameraForward = camTransform.forward;
+        cameraForward.y = 0f;
+        if (cameraForward != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(cameraForward);
+            transform.rotation = targetRotation;
         }
     }
 

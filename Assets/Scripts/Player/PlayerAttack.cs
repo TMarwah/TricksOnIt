@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Cinemachine;
 
 [RequireComponent(typeof(ThirdPersonMovement))]
 public class PlayerAttack : MonoBehaviour
@@ -31,13 +30,6 @@ public class PlayerAttack : MonoBehaviour
     public GameObject hitSparkPrefab;
     public GameObject plungeAttackVFXPrefab;
 
-    [Header("Camera")]
-    public Transform camTransform;
-    public float zoomFOV = 40f;
-    public float normalFOV = 60f;
-    public float zoomSpeed = 5f;
-    public CinemachineCamera virtualCamera;
-
     private bool isAiming = false;
 
     void Start()
@@ -52,7 +44,7 @@ public class PlayerAttack : MonoBehaviour
 
         // Maintain aiming while either Q or R is held down
         bool leftHeld = Input.GetKey(KeyCode.Q);
-        bool rightHeld = Input.GetKey(KeyCode.R);
+        bool rightHeld = Input.GetKey(KeyCode.E);
 
         // Update aiming state on player and local flag
         isAiming = playerController.isGrounded && (leftHeld || rightHeld);
@@ -89,15 +81,12 @@ public class PlayerAttack : MonoBehaviour
         }
 
         wasGroundedLastFrame = playerController.isGrounded;
-
-        UpdateCameraZoom();
     }
 
     IEnumerator PerformRangedAttack(string hand)
     {
         isAiming = true;
         playerController.isAiming = true;
-        FaceCamera();
 
         animator.SetTrigger(hand == "Left" ? "ShootLeft" : "ShootRight");
 
@@ -115,17 +104,6 @@ public class PlayerAttack : MonoBehaviour
         yield return new WaitForSeconds(0.15f);
         isAiming = false;
         playerController.isAiming = false;
-    }
-
-    void UpdateCameraZoom()
-    {
-        if (virtualCamera != null)
-        {
-            var lens = virtualCamera.Lens;
-            float targetFOV = isAiming ? zoomFOV : normalFOV;
-            lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, targetFOV, Time.deltaTime * zoomSpeed);
-            virtualCamera.Lens = lens;
-        }
     }
 
     Transform FindEnemyInSprayCone(float range, float angle)
@@ -285,16 +263,5 @@ public class PlayerAttack : MonoBehaviour
         rb.linearVelocity = force;
         yield return new WaitForSeconds(duration);
         agent.enabled = true;
-    }
-
-    void FaceCamera()
-    {
-        Vector3 cameraForward = camTransform.forward;
-        cameraForward.y = 0f;
-        if (cameraForward != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(cameraForward);
-            transform.rotation = targetRotation;
-        }
     }
 }
