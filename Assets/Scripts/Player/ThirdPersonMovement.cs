@@ -7,12 +7,11 @@ using System.Collections;
 
 public class ThirdPersonMovement : MonoBehaviour
 {
-
-
-    public CharacterController controller;
-    public Transform camTransform;
-    public Transform model;
-    public Animator animator;
+    private CharacterController controller;
+    private Transform camTransform;
+    private PlayerHealth playerHealth;
+    private Transform model;
+    private Animator animator;
 
     [Header("Movement")]
     public float speed = 6f;
@@ -25,7 +24,6 @@ public class ThirdPersonMovement : MonoBehaviour
     [Header("Jumping")]
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
-    private PlayerHealth playerHealth;
     public Transform groundCheck;
     public float groundDistance = 0.3f;
     public LayerMask groundMask;
@@ -41,13 +39,22 @@ public class ThirdPersonMovement : MonoBehaviour
     [Header("Air Rotation")]
     public float airFlipSpeed = 360f;
 
+    [Header("Aiming")]
+    public bool isAiming = false;
+    public float aimSpeedMultiplier = 0.4f;
+
+    [Header("Dashing")]
+    public float dashForce = 15f;
+    public float dashDuration = 0.25f;
+    private bool isDashing = false;
+
     // Reference for the VFX Graph
     public GameObject wallJumpVFXPrefab;
 
     Vector3 velocity;
     public bool isGrounded;
     bool isFlipping;
-    bool isSprinting;
+    public bool isSprinting;
     bool isTouchingWall;
 
     bool justWallJumped = false;
@@ -56,11 +63,29 @@ public class ThirdPersonMovement : MonoBehaviour
     Vector3 lastWallNormal = Vector3.zero;
     float wallNormalResetTime = 0.5f;
     float wallNormalTimer = 0f;
+    bool inHitStop = false;
+
+    void Awake()
+    {
+        controller = GetComponent<CharacterController>();
+        playerHealth = GetComponent<PlayerHealth>();
+
+        Animator foundAnimator = GetComponent<Animator>();
+        if (foundAnimator != null)
+        {
+            animator = foundAnimator;
+            model = animator.transform;
+        }
+
+        var cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+        if (cineCam != null)
+        {
+            camTransform = cineCam.transform;
+        }
+    }
 
     void Start()
     {
-        playerHealth = GetComponent<PlayerHealth>();
-        controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
         airControlMultiplier = airControlFactor;
@@ -68,11 +93,23 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
+        isGrounded = controller.isGrounded;
+        if (!isGrounded)
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
         if (playerHealth != null && playerHealth.IsDead())
         {
+            velocity = Vector3.Lerp(velocity, new Vector3(0, velocity.y, 0), 0.2f);
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isSprinting", false);
+            animator.SetBool("isDashing", false);
+            controller.Move(velocity * Time.deltaTime);
             return;
         }
-        isGrounded = controller.isGrounded;
+
+        inHitStop = HitStopManager.Instance.IsHitStopActive;
         animator.SetFloat("airSpeed", velocity.y);
         animator.SetBool("isGrounded", isGrounded);
 
@@ -103,12 +140,12 @@ public class ThirdPersonMovement : MonoBehaviour
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         float currentSpeed = isGrounded
-            ? (isSprinting ? speed * speedMod : speed)
+            ? (isAiming ? speed * aimSpeedMultiplier : (isSprinting ? speed * speedMod : speed))
             : speed * airControlMultiplier;
 
         Vector3 moveDir = Vector3.zero;
         // Only apply movement values when moving
-        if (direction.magnitude >= 0.1f)
+        if (direction.magnitude >= 0.1f && !inHitStop)
         {
             // Convert input direction to local space (relative to character's forward)
             Vector3 localDir = transform.InverseTransformDirection(direction);
@@ -116,24 +153,30 @@ public class ThirdPersonMovement : MonoBehaviour
             animator.SetFloat("Horizontal", localDir.x);
             animator.SetFloat("Vertical", localDir.z);
 
-            if (!isFlipping) {
+            if (!isFlipping && !isAiming)
+            {
                 float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
                 transform.rotation = Quaternion.Euler(0f, angle, 0f);
             }
-            if (isGrounded) {
+            if (isGrounded)
+            {
                 float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
                 controller.Move(moveDir.normalized * currentSpeed * Time.deltaTime);
                 animator.SetBool("isWalking", true);
-            } else {
+            }
+            else
+            {
                 float moveAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                 moveDir = Quaternion.Euler(0f, moveAngle, 0f) * Vector3.forward;
                 Vector3 airControl = moveDir.normalized * currentSpeed * Time.deltaTime;
                 controller.Move(airControl);
                 animator.SetBool("isWalking", false);
             }
-        } else {
+        }
+        else
+        {
             animator.SetFloat("Horizontal", 0f);
             animator.SetFloat("Vertical", 0f);
             animator.SetBool("isWalking", false);
@@ -147,28 +190,21 @@ public class ThirdPersonMovement : MonoBehaviour
         else
             lastWallNormal = Vector3.zero;
 
-        //jump input check
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
         {
-            if (isGrounded) {
-                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                velocity.x = horizontalVelocity.x * airControlFactor;
-                velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
-                animator.SetTrigger("JumpTrigger");
-            }
-            else if (isTouchingWall && CanWallJump())
-            {
-                PerformWallJump();
-            }
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            velocity.x = horizontalVelocity.x * airControlFactor;
+            velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
+            animator.SetTrigger("JumpTrigger");
+        }
+        else if (Input.GetButtonDown("Jump") && isTouchingWall && CanWallJump())
+        {
+            PerformWallJump();
         }
 
-        isSprinting = Input.GetKey(KeyCode.LeftShift) && isGrounded;
+        isSprinting = isDashing || (Input.GetKey(KeyCode.LeftShift) && isGrounded && !isAiming);
         animator.SetBool("isSprinting", isSprinting);
-
-        if (!isGrounded)
-        {
-            velocity.y += gravity * Time.deltaTime;
-        }
+        animator.SetBool("isDashing", isDashing);
 
         controller.Move(velocity * Time.deltaTime);
 
@@ -233,9 +269,77 @@ public class ThirdPersonMovement : MonoBehaviour
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
     }
-    public void PlungeDownward(float force)
+
+    public IEnumerator PlungeDownward(float force)
     {
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
         velocity.y = -Mathf.Abs(force);
+        velocity.x = 0f;
+        velocity.z = 0f;
+        // Wait until PlayerAttack.didPlungeAttack is true before continuing
+        PlayerAttack playerAttack = GetComponent<PlayerAttack>();
+        if (playerAttack != null)
+        {
+            yield return new WaitUntil(() => playerAttack.didPlungeAttack);
+        }
+        yield return new WaitForSeconds(0.5f);
+
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
+    }
+
+    public IEnumerator DashForward()
+    {
+        isDashing = true;
+        float timer = 0f;
+        Vector3 dashDirection = transform.forward;
+
+        // Ignore collisions with enemies
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
+
+        while (timer < dashDuration)
+        {
+            isGrounded = true;
+
+            // Move player forward
+            controller.Move(dashDirection * dashForce * Time.deltaTime);
+
+            // Smoothly interpolate model rotation and position
+            float t = timer / dashDuration;
+
+            timer += Time.deltaTime;
+            yield return null;
+
+            if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
+            {
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                velocity.x = horizontalVelocity.x * airControlFactor;
+                velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
+                animator.SetTrigger("JumpTrigger");
+                break;
+            }
+        }
+
+        // Wait until no longer overlapping enemies
+        yield return StartCoroutine(WaitUntilNotInsideEnemy());
+
+        // Re-enable collisions
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
+        isDashing = false;
+    }
+
+    private IEnumerator WaitUntilNotInsideEnemy()
+    {
+        float checkRadius = 0.5f;
+        LayerMask enemyMask = LayerMask.GetMask("Enemy");
+        float timer = 0f;
+        float maxWaitTime = 0.5f;
+
+        while (Physics.CheckSphere(transform.position, checkRadius, enemyMask))
+        {
+            if (timer > maxWaitTime)
+                yield break;
+            timer += Time.deltaTime;
+            yield return null;
+        }
     }
 }
-
