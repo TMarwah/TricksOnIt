@@ -6,9 +6,9 @@ public class PlayerCamera : MonoBehaviour
     public Transform camTransform;
     [Header("Camera FOV")]
     public Unity.Cinemachine.CinemachineCamera virtualCamera;
-    public float normalFOV = 60f;
-    public float sprintFOV = 70f;
-    public float aimFOV = 40f;
+    public float normalFOV = 40f;
+    public float sprintFOV = 50f;
+    public float aimFOV = 20f;
     public float fovLerpSpeed = 5f;
     private float currentFOV;
     // Start is called once before the first execution of Update after the MonoBehaviour is created

@@ -5,22 +5,22 @@ using System.Collections.Generic;
 [RequireComponent(typeof(ThirdPersonMovement))]
 public class PlayerAttack : MonoBehaviour
 {
-    public float attackRange = 3f;
+    public float attackRange = 1f;
     public float attackAngle = 90f;
-    public float knockbackForce = 5f;
-    public float plungingAttackForce = 20f;
+    public float plungingAttackForce = 10f;
     public Animator animator;
     public CameraEffects camEffects;
 
     [Header("Light Attack")]
+    public float knockbackForce = 0f;
     public float lightAttackCooldown = 0.3f;
     private float lightAttackTimer = 0f;
 
     [Header("Ranged Attack")]
-    public float rangedAttackRange = 8f;
-    public float rangedAttackAngle = 60f;
-    public float rangedKnockbackForce = 1f;
-    public float rangedSplashRadius = 0.5f;
+    public float rangedAttackRange = 3f;
+    public float rangedAttackAngle = 180f;
+    public float rangedKnockbackForce = 0.05f;
+    public float rangedSplashRadius = 0.1f;
     public int pelletsPerShot = 3;
     public float handCooldown = 0.5f;
 
@@ -28,7 +28,7 @@ public class PlayerAttack : MonoBehaviour
     private float rightCooldownTimer = 0f;
 
     private ThirdPersonMovement playerController;
-    private bool didPlungeAttack = false;
+    public bool didPlungeAttack = false;
     private bool wasGroundedLastFrame = true;
 
     [Header("VFX")]
@@ -79,17 +79,22 @@ public class PlayerAttack : MonoBehaviour
         // Other attack input handling unchanged
         if (Input.GetMouseButtonDown(0) && playerController.isGrounded && lightAttackTimer <= 0f)
         {
-            PerformLightAttack();
+            StartCoroutine(PerformLightAttack());
             lightAttackTimer = lightAttackCooldown;
         }
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded)
         {
-            PerformPlungingAttack();
+            StartCoroutine(PerformPlungingAttack());
         }
 
         if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame)
         {
-            PlayPlungeVFX();
+            if (plungeAttackVFXPrefab != null)
+            {
+                Vector3 vfxPos = transform.position;
+                vfxPos.y -= 1f;
+                Instantiate(plungeAttackVFXPrefab, vfxPos, Quaternion.identity);
+            }
             didPlungeAttack = false;
         }
 
@@ -105,7 +110,8 @@ public class PlayerAttack : MonoBehaviour
             Transform enemy = FindEnemyInSprayCone(rangedAttackRange, rangedAttackAngle);
             if (enemy != null)
             {
-                DealDamageToSingleEnemy(enemy, rangedKnockbackForce);
+                camEffects.Shake(0.01f);
+                DealDamageToSingleEnemy(enemy, rangedKnockbackForce, 5f);
                 DealSplashDamageAround(enemy.position, rangedSplashRadius, rangedKnockbackForce * 0.5f);
             }
             yield return new WaitForSeconds(0.05f);
@@ -139,23 +145,29 @@ public class PlayerAttack : MonoBehaviour
         return null;
     }
 
-    void DealDamageToSingleEnemy(Transform enemy, float force)
+    void DealDamageToSingleEnemy(Transform enemy, float force, float damage)
     {
         Vector3 toEnemy = (enemy.position - transform.position).normalized;
 
         Rigidbody rb = enemy.GetComponent<Rigidbody>();
         UnityEngine.AI.NavMeshAgent agent = enemy.GetComponent<UnityEngine.AI.NavMeshAgent>();
-
-        if (agent != null && rb != null)
-        {
-            rb.AddForce(toEnemy * force, ForceMode.Impulse);
-            StartCoroutine(KnockbackAgent(agent, rb, toEnemy * force, 0.3f));
-        }
-
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+
         if (health != null)
         {
-            health.TakeDamage(20f); // adjust value as needed
+            agent.enabled = false;
+            health.TakeDamage(damage);
+
+            if (force >= 5f)
+            {
+                camEffects.Shake(force / 100f);
+                HitStopManager.Instance.TriggerHitStop(animator, health.GetComponent<Animator>());
+                StartCoroutine(DelayedKnockbackAfterHitstop(enemy, toEnemy, force));
+            }
+            else
+            {
+                Knockback(enemy, toEnemy, force);
+            }
         }
 
         if (hitSparkPrefab != null)
@@ -172,36 +184,13 @@ public class PlayerAttack : MonoBehaviour
         {
             if (hit.CompareTag("Enemy"))
             {
-                Transform enemy = hit.transform;
-                Vector3 toEnemy = (enemy.position - center).normalized;
-
-                Rigidbody rb = enemy.GetComponent<Rigidbody>();
-                UnityEngine.AI.NavMeshAgent agent = enemy.GetComponent<UnityEngine.AI.NavMeshAgent>();
-
-                if (agent != null && rb != null)
-                {
-                    rb.AddForce(toEnemy * force, ForceMode.Impulse);
-                    StartCoroutine(KnockbackAgent(agent, rb, toEnemy * force, 0.2f));
-                }
-
-                EnemyHealth health = enemy.GetComponent<EnemyHealth>();
-                if (health != null)
-                {
-                    health.TakeDamage(10f); // splash damage is lighter
-                }
-
-                if (hitSparkPrefab != null)
-                {
-                    Quaternion sparkRot = Quaternion.LookRotation(-toEnemy);
-                    Instantiate(hitSparkPrefab, enemy.position, sparkRot);
-                }
+                DealDamageToSingleEnemy(hit.transform, force, 10f);
             }
         }
     }
 
-    void PerformLightAttack()
+    IEnumerator PerformLightAttack()
     {
-        animator.SetTrigger("LightAttack");
         if (playerController.isSprinting && playerController.isGrounded)
         {
             StartCoroutine(playerController.DashForward());
@@ -209,26 +198,18 @@ public class PlayerAttack : MonoBehaviour
         }
         else if (playerController.isGrounded)
         {
+            animator.SetTrigger("LightAttack");
+            yield return new WaitForSeconds(0.3f);
             DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
         }
     }
 
-    void PerformPlungingAttack()
+    IEnumerator PerformPlungingAttack()
     {
-        playerController.PlungeDownward(plungingAttackForce);
+        StartCoroutine(playerController.PlungeDownward(40f));
+        yield return new WaitUntil(() => playerController.isGrounded);
         DealDamageToEnemies(attackRange, 360f, plungingAttackForce);
         didPlungeAttack = true;
-    }
-
-    void PlayPlungeVFX()
-    {
-        if (plungeAttackVFXPrefab != null)
-        {
-            Vector3 vfxPos = transform.position;
-            vfxPos.y -= 1f;
-            Instantiate(plungeAttackVFXPrefab, vfxPos, Quaternion.identity);
-        }
-        camEffects.Shake(0.2f);
     }
 
     void DealDamageToEnemies(float range, float angle, float force)
@@ -245,26 +226,7 @@ public class PlayerAttack : MonoBehaviour
 
                 if (currentAngle <= angle / 2f || angle == 360f)
                 {
-                    Rigidbody rb = hit.GetComponent<Rigidbody>();
-                    UnityEngine.AI.NavMeshAgent agent = hit.GetComponent<UnityEngine.AI.NavMeshAgent>();
-
-                    if (agent != null && rb != null)
-                    {
-                        rb.AddForce(toTarget * force, ForceMode.Impulse);
-                        StartCoroutine(KnockbackAgent(agent, rb, toTarget * force, 1f));
-                    }
-
-                    EnemyHealth health = hit.GetComponent<EnemyHealth>();
-                    if (health != null)
-                    {
-                        health.TakeDamage(30f); // heavy melee damage
-                    }
-
-                    if (hitSparkPrefab != null)
-                    {
-                        Quaternion sparkRot = Quaternion.LookRotation(-toTarget);
-                        Instantiate(hitSparkPrefab, hit.transform.position, sparkRot);
-                    }
+                    DealDamageToSingleEnemy(hit.transform, force, 20f);
                 }
             }
         }
@@ -285,19 +247,7 @@ public class PlayerAttack : MonoBehaviour
                 if (hit.CompareTag("Enemy") && !hitEnemies.Contains(hit))
                 {
                     hitEnemies.Add(hit);
-
-                    EnemyHealth health = hit.GetComponent<EnemyHealth>();
-                    if (health != null)
-                    {
-                        health.TakeDamage(5f);
-                    }
-
-                    Rigidbody rb = hit.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        Vector3 knockDir = (hit.transform.position - transform.position).normalized;
-                        rb.AddForce(knockDir * knockbackForce, ForceMode.Impulse);
-                    }
+                    DealDamageToSingleEnemy(hit.transform, 5f, 25f);
                 }
             }
 
@@ -306,11 +256,22 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
-    IEnumerator KnockbackAgent(UnityEngine.AI.NavMeshAgent agent, Rigidbody rb, Vector3 force, float duration)
+    IEnumerator DelayedKnockbackAfterHitstop(Transform enemy, Vector3 direction, float force)
     {
-        agent.enabled = false;
-        rb.linearVelocity = force;
-        yield return new WaitForSeconds(duration);
-        agent.enabled = true;
+        yield return new WaitUntil(() => !HitStopManager.Instance.IsHitStopActive);
+        Knockback(enemy, direction, force);
+    }
+
+    void Knockback(Transform enemy, Vector3 direction, float force)
+    {
+        Rigidbody rb = enemy.GetComponent<Rigidbody>();
+        UnityEngine.AI.NavMeshAgent agent = enemy.GetComponent<UnityEngine.AI.NavMeshAgent>();
+
+        if (rb != null)
+        {
+            rb.AddForce(direction * force, ForceMode.Impulse);
+            rb.linearVelocity = direction * force;
+            agent.enabled = true;
+        }
     }
 }

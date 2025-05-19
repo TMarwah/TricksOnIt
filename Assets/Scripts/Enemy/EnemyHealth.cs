@@ -5,7 +5,7 @@ public class EnemyHealth : MonoBehaviour
     public float maxHealth = 100f;
     private float currentHealth;
 
-    public GameObject deathVFX; // Optional
+    public GameObject deathVFX;
     private Animator animator;
     public bool isDead = false;
 
@@ -23,7 +23,7 @@ public class EnemyHealth : MonoBehaviour
 
         if (animator != null)
         {
-            animator.SetTrigger("Flinch"); // Optional short hurt animation
+            animator.SetTrigger("Flinch");
         }
 
         if (currentHealth <= 0f)
@@ -43,7 +43,7 @@ public class EnemyHealth : MonoBehaviour
 
         if (animator != null)
         {
-            animator.SetTrigger("Die"); // Assumes there's a 'Die' animation state
+            animator.SetTrigger("Die");
         }
 
         // Disable navmesh and collider (or destroy after delay)

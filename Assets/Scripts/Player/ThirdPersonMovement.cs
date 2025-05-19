@@ -92,7 +92,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
-        if (playerHealth != null && playerHealth.IsDead())
+        if (HitStopManager.Instance.IsHitStopActive || (playerHealth != null && playerHealth.IsDead()))
         {
             return;
         }
@@ -177,7 +177,6 @@ public class ThirdPersonMovement : MonoBehaviour
         else
             lastWallNormal = Vector3.zero;
 
-        //jump input check
         if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
@@ -263,9 +262,21 @@ public class ThirdPersonMovement : MonoBehaviour
         isFlipping = false;
     }
 
-    public void PlungeDownward(float force)
+    public IEnumerator PlungeDownward(float force)
     {
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
         velocity.y = -Mathf.Abs(force);
+        velocity.x = 0f;
+        velocity.z = 0f;
+        // Wait until PlayerAttack.didPlungeAttack is true before continuing
+        PlayerAttack playerAttack = GetComponent<PlayerAttack>();
+        if (playerAttack != null)
+        {
+            yield return new WaitUntil(() => playerAttack.didPlungeAttack);
+        }
+        yield return new WaitForSeconds(0.5f);
+
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
     }
 
     public IEnumerator DashForward()
@@ -289,6 +300,15 @@ public class ThirdPersonMovement : MonoBehaviour
 
             timer += Time.deltaTime;
             yield return null;
+
+            if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
+            {
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                velocity.x = horizontalVelocity.x * airControlFactor;
+                velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
+                animator.SetTrigger("JumpTrigger");
+                break;
+            }
         }
 
         // Wait until no longer overlapping enemies
@@ -301,13 +321,16 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private IEnumerator WaitUntilNotInsideEnemy()
     {
-        // Define a small overlap radius; tune if needed
         float checkRadius = 0.5f;
         LayerMask enemyMask = LayerMask.GetMask("Enemy");
+        float timer = 0f;
+        float maxWaitTime = 0.5f;
 
-        // Wait until we're no longer overlapping any enemy
         while (Physics.CheckSphere(transform.position, checkRadius, enemyMask))
         {
+            if (timer > maxWaitTime)
+                yield break;
+            timer += Time.deltaTime;
             yield return null;
         }
     }
