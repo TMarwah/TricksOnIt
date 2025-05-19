@@ -55,6 +55,8 @@ public class PlayerAttack : MonoBehaviour
 
     void Update()
     {
+        if (GetComponent<PlayerHealth>().IsDead()) return;
+
         leftCooldownTimer -= Time.deltaTime;
         rightCooldownTimer -= Time.deltaTime;
         lightAttackTimer -= Time.deltaTime;

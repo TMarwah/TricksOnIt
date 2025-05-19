@@ -9,6 +9,7 @@ public class ThirdPersonMovement : MonoBehaviour
 {
     private CharacterController controller;
     private Transform camTransform;
+    private PlayerHealth playerHealth;
     private Transform model;
     private Animator animator;
 
@@ -23,7 +24,6 @@ public class ThirdPersonMovement : MonoBehaviour
     [Header("Jumping")]
     public float jumpHeight = 1.5f;
     public float gravity = -9.81f;
-    private PlayerHealth playerHealth;
     public Transform groundCheck;
     public float groundDistance = 0.3f;
     public LayerMask groundMask;
@@ -63,6 +63,7 @@ public class ThirdPersonMovement : MonoBehaviour
     Vector3 lastWallNormal = Vector3.zero;
     float wallNormalResetTime = 0.5f;
     float wallNormalTimer = 0f;
+    bool inHitStop = false;
 
     void Awake()
     {
@@ -92,11 +93,23 @@ public class ThirdPersonMovement : MonoBehaviour
 
     void Update()
     {
-        if (HitStopManager.Instance.IsHitStopActive || (playerHealth != null && playerHealth.IsDead()))
+        isGrounded = controller.isGrounded;
+        if (!isGrounded)
         {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
+        if (playerHealth != null && playerHealth.IsDead())
+        {
+            velocity = Vector3.Lerp(velocity, new Vector3(0, velocity.y, 0), 0.2f);
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isSprinting", false);
+            animator.SetBool("isDashing", false);
+            controller.Move(velocity * Time.deltaTime);
             return;
         }
-        isGrounded = controller.isGrounded;
+
+        inHitStop = HitStopManager.Instance.IsHitStopActive;
         animator.SetFloat("airSpeed", velocity.y);
         animator.SetBool("isGrounded", isGrounded);
 
@@ -132,7 +145,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         Vector3 moveDir = Vector3.zero;
         // Only apply movement values when moving
-        if (direction.magnitude >= 0.1f)
+        if (direction.magnitude >= 0.1f && !inHitStop)
         {
             // Convert input direction to local space (relative to character's forward)
             Vector3 localDir = transform.InverseTransformDirection(direction);
@@ -192,11 +205,6 @@ public class ThirdPersonMovement : MonoBehaviour
         isSprinting = isDashing || (Input.GetKey(KeyCode.LeftShift) && isGrounded && !isAiming);
         animator.SetBool("isSprinting", isSprinting);
         animator.SetBool("isDashing", isDashing);
-
-        if (!isGrounded)
-        {
-            velocity.y += gravity * Time.deltaTime;
-        }
 
         controller.Move(velocity * Time.deltaTime);
 

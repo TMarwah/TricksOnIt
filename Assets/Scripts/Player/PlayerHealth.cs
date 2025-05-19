@@ -14,6 +14,8 @@ public class PlayerHealth : MonoBehaviour
     public int CurrentHealth => Mathf.CeilToInt(_currentHealth);
     [SerializeField] private float healthDrainRate = 1f;
     private bool isDraining = true;
+    private int deathLayerIndex = 2;
+    private bool isDead = false;
 
     private void Awake()
     {
@@ -31,9 +33,13 @@ public class PlayerHealth : MonoBehaviour
     private void Update()
     {
         if (isDraining && !IsDead())
+            {
+                float healthLoss = healthDrainRate * Time.deltaTime;
+                ChangeHealth(-healthLoss);
+            }
+        if (Input.GetKeyDown(KeyCode.U))
         {
-            float healthLoss = healthDrainRate * Time.deltaTime;
-            ChangeHealth(-healthLoss);
+            Die();
         }
     }
 
@@ -58,12 +64,13 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         Debug.Log("Player has died.");
-        animator?.SetTrigger("Die");
+        animator.SetTrigger("Die");
+        isDead = true;
     }
 
     public bool IsDead()
     {
-        return _currentHealth <= 0;
+        return isDead;
     }
 
     public float HealthNormalized()
