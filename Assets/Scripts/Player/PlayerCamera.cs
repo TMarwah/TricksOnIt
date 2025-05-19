@@ -3,9 +3,9 @@ using UnityEngine;
 public class PlayerCamera : MonoBehaviour
 {
     private ThirdPersonMovement player;
-    public Transform camTransform;
+    private Transform camTransform;
     [Header("Camera FOV")]
-    public Unity.Cinemachine.CinemachineCamera virtualCamera;
+    private Unity.Cinemachine.CinemachineCamera virtualCamera;
     public float normalFOV = 40f;
     public float sprintFOV = 50f;
     public float aimFOV = 20f;

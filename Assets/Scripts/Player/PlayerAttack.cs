@@ -5,13 +5,13 @@ using System.Collections.Generic;
 [RequireComponent(typeof(ThirdPersonMovement))]
 public class PlayerAttack : MonoBehaviour
 {
-    public float attackRange = 1f;
-    public float attackAngle = 90f;
-    public float plungingAttackForce = 10f;
-    public Animator animator;
-    public CameraEffects camEffects;
+    private Animator animator;
+    private CameraEffects camEffects;
+    private ThirdPersonMovement playerController;
 
     [Header("Light Attack")]
+    public float attackRange = 1f;
+    public float attackAngle = 90f;
     public float knockbackForce = 0f;
     public float lightAttackCooldown = 0.3f;
     private float lightAttackTimer = 0f;
@@ -26,10 +26,11 @@ public class PlayerAttack : MonoBehaviour
 
     private float leftCooldownTimer = 0f;
     private float rightCooldownTimer = 0f;
-
-    private ThirdPersonMovement playerController;
     public bool didPlungeAttack = false;
     private bool wasGroundedLastFrame = true;
+
+    [Header("Plunge")]
+    public float plungingAttackForce = 10f;
 
     [Header("VFX")]
     public GameObject hitSparkPrefab;
@@ -40,7 +41,7 @@ public class PlayerAttack : MonoBehaviour
     void Awake()
     {
         playerController = GetComponent<ThirdPersonMovement>();
-        Animator foundAnimator = GetComponentInChildren<Animator>();
+        Animator foundAnimator = GetComponent<Animator>();
         if (foundAnimator != null)
         {
             animator = foundAnimator;

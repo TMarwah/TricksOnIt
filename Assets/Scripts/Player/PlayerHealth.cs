@@ -17,7 +17,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void Awake()
     {
-        Animator foundAnimator = GetComponentInChildren<Animator>();
+        Animator foundAnimator = GetComponent<Animator>();
         if (foundAnimator != null)
         {
             animator = foundAnimator;
@@ -58,7 +58,7 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         Debug.Log("Player has died.");
-        // Add death logic here: disable movement, play animation, etc.
+        animator?.SetTrigger("Die");
     }
 
     public bool IsDead()

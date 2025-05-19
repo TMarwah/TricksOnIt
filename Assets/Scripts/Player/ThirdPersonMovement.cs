@@ -7,10 +7,10 @@ using System.Collections;
 
 public class ThirdPersonMovement : MonoBehaviour
 {
-    public CharacterController controller;
-    public Transform camTransform;
-    public Transform model;
-    public Animator animator;
+    private CharacterController controller;
+    private Transform camTransform;
+    private Transform model;
+    private Animator animator;
 
     [Header("Movement")]
     public float speed = 6f;
@@ -69,7 +69,7 @@ public class ThirdPersonMovement : MonoBehaviour
         controller = GetComponent<CharacterController>();
         playerHealth = GetComponent<PlayerHealth>();
 
-        Animator foundAnimator = GetComponentInChildren<Animator>();
+        Animator foundAnimator = GetComponent<Animator>();
         if (foundAnimator != null)
         {
             animator = foundAnimator;
