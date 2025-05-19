@@ -120,7 +120,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   attackRange: 3
   attackAngle: 180
-  knockbackForce: 5
+  knockbackForce: 3
   lightAttackCooldown: 0.3
   rangedAttackRange: 8
   rangedAttackAngle: 60
