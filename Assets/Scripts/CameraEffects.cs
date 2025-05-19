@@ -1,13 +1,14 @@
 using UnityEngine;
 using Unity.Cinemachine;
 
-public class CameraSway : MonoBehaviour
+public class CameraEffects : MonoBehaviour
 {
     public CinemachineCamera cineCam;
     public float maxRollAngle = 10f;
     public float rollSpeed = 5f;
 
     private float currentRoll = 0f;
+    public CinemachineImpulseSource impulseSource;
 
     void Update()
     {
@@ -24,5 +25,19 @@ public class CameraSway : MonoBehaviour
         var rotation = cineCam.transform.localRotation.eulerAngles;
         rotation.z = currentRoll;
         cineCam.transform.localRotation = Quaternion.Euler(rotation);
+
+        if (Input.GetKeyDown(KeyCode.Y))
+        {
+            Shake(0.2f);
+        }
+    }
+
+
+    public void Shake(float intensity)
+    {
+        if (impulseSource != null)
+        {
+            impulseSource.GenerateImpulse(intensity);
+        }
     }
 }

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4508181626683592814}
   - component: {fileID: 1906083934841327830}
   - component: {fileID: 6115141441396464168}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -125,7 +125,7 @@ GameObject:
   - component: {fileID: 5515548847795019912}
   - component: {fileID: 2945999106162397670}
   - component: {fileID: 422717764819647490}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Boss
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -292,3 +292,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 1000
   deathVFX: {fileID: 3500883190020426963, guid: 9e15fafdf3d8784419547a150bdfc53a, type: 3}
+  isDead: 0

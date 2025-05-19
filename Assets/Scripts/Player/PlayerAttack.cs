@@ -10,6 +10,7 @@ public class PlayerAttack : MonoBehaviour
     public float knockbackForce = 5f;
     public float plungingAttackForce = 20f;
     public Animator animator;
+    public CameraEffects camEffects;
 
     [Header("Light Attack")]
     public float lightAttackCooldown = 0.3f;
@@ -36,9 +37,14 @@ public class PlayerAttack : MonoBehaviour
 
     private bool isAiming = false;
 
-    void Start()
+    void Awake()
     {
         playerController = GetComponent<ThirdPersonMovement>();
+        var cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+        if (cineCam != null)
+        {
+            camEffects = cineCam.GetComponent<CameraEffects>();
+        }
     }
 
     void Update()
@@ -193,11 +199,18 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
-
     void PerformLightAttack()
     {
         animator.SetTrigger("LightAttack");
-        DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
+        if (playerController.isSprinting && playerController.isGrounded)
+        {
+            StartCoroutine(playerController.DashForward());
+            StartCoroutine(DealContactDamageDuringDash());
+        }
+        else if (playerController.isGrounded)
+        {
+            DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
+        }
     }
 
     void PerformPlungingAttack()
@@ -211,8 +224,11 @@ public class PlayerAttack : MonoBehaviour
     {
         if (plungeAttackVFXPrefab != null)
         {
-            Instantiate(plungeAttackVFXPrefab, transform.position, Quaternion.identity);
+            Vector3 vfxPos = transform.position;
+            vfxPos.y -= 1f;
+            Instantiate(plungeAttackVFXPrefab, vfxPos, Quaternion.identity);
         }
+        camEffects.Shake(0.2f);
     }
 
     void DealDamageToEnemies(float range, float angle, float force)
@@ -254,6 +270,41 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
+    IEnumerator DealContactDamageDuringDash()
+    {
+        float timer = 0f;
+        float duration = playerController.dashDuration;
+
+        HashSet<Collider> hitEnemies = new HashSet<Collider>();
+
+        while (timer < duration)
+        {
+            Collider[] hits = Physics.OverlapSphere(transform.position, 1f);
+            foreach (Collider hit in hits)
+            {
+                if (hit.CompareTag("Enemy") && !hitEnemies.Contains(hit))
+                {
+                    hitEnemies.Add(hit);
+
+                    EnemyHealth health = hit.GetComponent<EnemyHealth>();
+                    if (health != null)
+                    {
+                        health.TakeDamage(5f);
+                    }
+
+                    Rigidbody rb = hit.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        Vector3 knockDir = (hit.transform.position - transform.position).normalized;
+                        rb.AddForce(knockDir * knockbackForce, ForceMode.Impulse);
+                    }
+                }
+            }
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+    }
 
     IEnumerator KnockbackAgent(UnityEngine.AI.NavMeshAgent agent, Rigidbody rb, Vector3 force, float duration)
     {

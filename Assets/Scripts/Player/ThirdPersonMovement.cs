@@ -40,8 +40,13 @@ public class ThirdPersonMovement : MonoBehaviour
     public float airFlipSpeed = 360f;
 
     [Header("Aiming")]
-    public bool isAiming = false; // exposed for PlayerAttack to toggle
+    public bool isAiming = false;
     public float aimSpeedMultiplier = 0.4f;
+
+    [Header("Dashing")]
+    public float dashForce = 15f;
+    public float dashDuration = 0.25f;
+    private bool isDashing = false;
 
     // Reference for the VFX Graph
     public GameObject wallJumpVFXPrefab;
@@ -185,8 +190,9 @@ public class ThirdPersonMovement : MonoBehaviour
             PerformWallJump();
         }
 
-        isSprinting = Input.GetKey(KeyCode.LeftShift) && isGrounded && !isAiming;
+        isSprinting = isDashing || (Input.GetKey(KeyCode.LeftShift) && isGrounded && !isAiming);
         animator.SetBool("isSprinting", isSprinting);
+        animator.SetBool("isDashing", isDashing);
 
         if (!isGrounded)
         {
@@ -260,5 +266,49 @@ public class ThirdPersonMovement : MonoBehaviour
     public void PlungeDownward(float force)
     {
         velocity.y = -Mathf.Abs(force);
+    }
+
+    public IEnumerator DashForward()
+    {
+        isDashing = true;
+        float timer = 0f;
+        Vector3 dashDirection = transform.forward;
+
+        // Ignore collisions with enemies
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
+
+        while (timer < dashDuration)
+        {
+            isGrounded = true;
+
+            // Move player forward
+            controller.Move(dashDirection * dashForce * Time.deltaTime);
+
+            // Smoothly interpolate model rotation and position
+            float t = timer / dashDuration;
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // Wait until no longer overlapping enemies
+        yield return StartCoroutine(WaitUntilNotInsideEnemy());
+
+        // Re-enable collisions
+        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
+        isDashing = false;
+    }
+
+    private IEnumerator WaitUntilNotInsideEnemy()
+    {
+        // Define a small overlap radius; tune if needed
+        float checkRadius = 0.5f;
+        LayerMask enemyMask = LayerMask.GetMask("Enemy");
+
+        // Wait until we're no longer overlapping any enemy
+        while (Physics.CheckSphere(transform.position, checkRadius, enemyMask))
+        {
+            yield return null;
+        }
     }
 }
