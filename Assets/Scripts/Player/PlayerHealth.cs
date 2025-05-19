@@ -7,6 +7,7 @@ public class PlayerHealth : MonoBehaviour
     public int MaxHealth = 100;
 
     public Action OnHealthChange;
+    private Animator animator;
 
     public float _currentHealth; // TODO: Make this private 
 
@@ -14,10 +15,19 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private float healthDrainRate = 1f;
     private bool isDraining = true;
 
+    private void Awake()
+    {
+        Animator foundAnimator = GetComponentInChildren<Animator>();
+        if (foundAnimator != null)
+        {
+            animator = foundAnimator;
+        }
+    }
     private void Start()
     {
         _currentHealth = MaxHealth;
     }
+
     private void Update()
     {
         if (isDraining && !IsDead())
@@ -37,6 +47,12 @@ public class PlayerHealth : MonoBehaviour
         {
             Die();
         }
+    }
+
+    public void TakeDamage(float damage)
+    {
+        ChangeHealth(damage);
+        animator?.SetTrigger("takeDamage");
     }
 
     private void Die()

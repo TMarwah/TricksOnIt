@@ -40,6 +40,11 @@ public class PlayerAttack : MonoBehaviour
     void Awake()
     {
         playerController = GetComponent<ThirdPersonMovement>();
+        Animator foundAnimator = GetComponentInChildren<Animator>();
+        if (foundAnimator != null)
+        {
+            animator = foundAnimator;
+        }
         var cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
         if (cineCam != null)
         {
@@ -79,7 +84,7 @@ public class PlayerAttack : MonoBehaviour
         // Other attack input handling unchanged
         if (Input.GetMouseButtonDown(0) && playerController.isGrounded && lightAttackTimer <= 0f)
         {
-            StartCoroutine(PerformLightAttack());
+            PerformLightAttack();
             lightAttackTimer = lightAttackCooldown;
         }
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded)
@@ -189,7 +194,7 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
-    IEnumerator PerformLightAttack()
+    void PerformLightAttack()
     {
         if (playerController.isSprinting && playerController.isGrounded)
         {
@@ -199,9 +204,12 @@ public class PlayerAttack : MonoBehaviour
         else if (playerController.isGrounded)
         {
             animator.SetTrigger("LightAttack");
-            yield return new WaitForSeconds(0.3f);
-            DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
         }
+    }
+
+    public void LightAttackHit()
+    {
+        DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
     }
 
     IEnumerator PerformPlungingAttack()
