@@ -8,6 +8,7 @@ public class PlayerAttack : MonoBehaviour
     private Animator animator;
     private CameraEffects camEffects;
     private ThirdPersonMovement playerController;
+    private ComboMeter comboMeter;
 
     [Header("Light Attack")]
     public float attackRange = 1f;
@@ -37,6 +38,7 @@ public class PlayerAttack : MonoBehaviour
     public GameObject plungeAttackVFXPrefab;
 
     private bool isAiming = false;
+    private float shootComboTimer = 0f;
 
     void Awake()
     {
@@ -51,6 +53,7 @@ public class PlayerAttack : MonoBehaviour
         {
             camEffects = cineCam.GetComponent<CameraEffects>();
         }
+        comboMeter = FindObjectOfType<ComboMeter>();
     }
 
     void Update()
@@ -61,7 +64,7 @@ public class PlayerAttack : MonoBehaviour
         rightCooldownTimer -= Time.deltaTime;
         lightAttackTimer -= Time.deltaTime;
 
-        // Maintain aiming while either Q or R is held down
+        // Maintain aiming while either Q or E is held down
         bool leftHeld = Input.GetKey(KeyCode.Q);
         bool rightHeld = Input.GetKey(KeyCode.E);
 
@@ -70,31 +73,70 @@ public class PlayerAttack : MonoBehaviour
         playerController.isAiming = isAiming;
         animator.SetBool("isAiming", isAiming);
 
-        // Fire left hand shot if cooldown allows and key held
-        if (leftHeld && leftCooldownTimer <= 0f && playerController.isGrounded)
+        // --- SHOOTING: Holding Q on ground spends 1 combo point per second ---
+        if (playerController.isGrounded && leftHeld)
         {
-            StartCoroutine(PerformRangedAttack("Left"));
-            leftCooldownTimer = handCooldown;
+            shootComboTimer += Time.deltaTime;
+            if (shootComboTimer >= 1f)
+            {
+                if (comboMeter != null && comboMeter.HasComboPoints())
+                {
+                    comboMeter.SpendComboPoint();
+                    StartCoroutine(PerformRangedAttack("Left"));
+                    leftCooldownTimer = handCooldown;
+                }
+                else
+                {
+                    // Optionally: feedback for not enough combo points
+                }
+                shootComboTimer = 0f;
+            }
+        }
+        else
+        {
+            shootComboTimer = 0f;
         }
 
         // Fire right hand shot if cooldown allows and key held
         if (rightHeld && rightCooldownTimer <= 0f && playerController.isGrounded)
         {
-            StartCoroutine(PerformRangedAttack("Right"));
-            rightCooldownTimer = handCooldown;
+            if (comboMeter != null && comboMeter.HasComboPoints())
+            {
+                comboMeter.SpendComboPoint();
+                StartCoroutine(PerformRangedAttack("Right"));
+                rightCooldownTimer = handCooldown;
+            }
         }
 
-        // Other attack input handling unchanged
+        // --- LIGHT ATTACK ---
         if (Input.GetMouseButtonDown(0) && playerController.isGrounded && lightAttackTimer <= 0f)
         {
-            PerformLightAttack();
-            lightAttackTimer = lightAttackCooldown;
+            if (comboMeter != null && comboMeter.HasComboPoints())
+            {
+                comboMeter.SpendComboPoint();
+                PerformLightAttack();
+                lightAttackTimer = lightAttackCooldown;
+            }
+            else
+            {
+                // Optionally: play "not enough combo" sound or feedback
+            }
         }
+        // --- PLUNGE ATTACK (SLAM): Requires 5 combo points ---
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded)
         {
-            StartCoroutine(PerformPlungingAttack());
+            if (comboMeter != null && comboMeter.HasComboPoints(5))
+            {
+                comboMeter.SpendComboPoint(5);
+                StartCoroutine(PerformPlungingAttack());
+            }
+            else
+            {
+                // Optionally: play "not enough combo" sound or feedback
+            }
         }
 
+        // --- PLUNGE VFX ON LANDING ---
         if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame)
         {
             if (plungeAttackVFXPrefab != null)
