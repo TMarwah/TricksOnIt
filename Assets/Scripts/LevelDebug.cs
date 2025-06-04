@@ -87,7 +87,7 @@ public class LevelDebug : MonoBehaviour
   /// Teleports the player to the specified spawn point index and updates the GameState.
   /// </summary>
   /// <param name="index">The index of the spawn point in the 'spawnPoints' array.</param>
-  private void TeleportPlayer(int index)
+  public void TeleportPlayer(int index)
   {
     if (player == null)
     {

@@ -117,12 +117,11 @@ public class GameState : MonoBehaviour
     public void NotifyBossDefeatedAndAdvanceLevel()
     {
         Debug.Log("GameState: Boss defeated! Advancing to next level.");
-        if (CurrentLevelIndex >= 3)
+        LevelDebug levelDebug = GetComponent<LevelDebug>();
+        if (levelDebug != null)
         {
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
-            return;
+            levelDebug.TeleportPlayer(CurrentLevelIndex);
         }
-        SetCurrentLevel(CurrentLevelIndex + 1);
         // Optionally, you can trigger additional events or logic here for level completion.
     }
 
