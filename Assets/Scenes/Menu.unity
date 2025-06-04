@@ -1963,9 +1963,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tracks:
   - trackName: Lobby
-    clip: {fileID: 8300000, guid: 05bc4b490a2524718b5f7875135b7b4b, type: 3}
+    clip: {fileID: 8300000, guid: b4a63bf0b03fe4b36ac7c997f8516446, type: 3}
   - trackName: Level1
-    clip: {fileID: 8300000, guid: 233e0e052227541f8a32747eabbb215d, type: 3}
+    clip: {fileID: 8300000, guid: 227eef9bb096043268ad096853fb0a6f, type: 3}
 --- !u!1 &1170642043
 GameObject:
   m_ObjectHideFlags: 0
