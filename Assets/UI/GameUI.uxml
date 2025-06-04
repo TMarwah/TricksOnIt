@@ -1,8 +1,8 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="HealthBarBackground" class="GameUIStyle" style="flex-grow: 1; position: absolute; height: 30px; background-image: url(&quot;project://database/Assets/Art/HealthbarBackground.png?fileID=2800000&amp;guid=2909acd091e054631bbd3102bed47fec&amp;type=3#HealthbarBackground&quot;); top: 141px; left: -2px; right: 744px; bottom: 302px; width: 175px;">
+    <Style src="project://database/Assets/styles/GameUIStyle.uss?fileID=7433441132597879392&amp;guid=a078979d6ade347fc9120933de4bca6f&amp;type=3#GameUIStyle" />
+    <ui:VisualElement name="HealthBarBackground" class="GameUIStyle" style="flex-grow: 1; position: absolute; height: 30px; background-image: url(&quot;project://database/Assets/Art/HealthbarBackground.png?fileID=2800000&amp;guid=2909acd091e054631bbd3102bed47fec&amp;type=3#HealthbarBackground&quot;); top: 141px; left: -2px; right: 744px; bottom: 302px; width: 175px; rotate: 270deg;">
         <ui:VisualElement name="HealthBarMask" style="flex-grow: 1; position: absolute; width: 100%; height: 100%; overflow: hidden; transition-property: width; transition-duration: 0.5s; transition-timing-function: ease-out-bounce; top: 0; left: 0;">
-            <ui:VisualElement name="HealthBarFill" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/Art/HealthBarFill.png?fileID=2800000&amp;guid=499387ba7e2b8427b9b3627167e43d80&amp;type=3#HealthBarFill&quot;);" />
+            <ui:VisualElement name="HealthBarFill" style="flex-grow: 1; background-image: url(&quot;project://database/Assets/Art/HealthBarFill.png?fileID=2800000&amp;guid=499387ba7e2b8427b9b3627167e43d80&amp;type=3#HealthBarFill&quot;); rotate: 0;" />
         </ui:VisualElement>
-        <ui:Label text="Label" name="HealthLabel" style="position: absolute; width: 80%; height: 100%; -unity-text-align: middle-left; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-left: 50px; padding-top: 0; padding-right: 0; padding-bottom: 0; left: 0; top: 0;" />
     </ui:VisualElement>
 </ui:UXML>
