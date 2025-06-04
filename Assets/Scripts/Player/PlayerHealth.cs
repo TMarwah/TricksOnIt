@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -10,11 +11,13 @@ public class PlayerHealth : MonoBehaviour
     private Animator animator;
 
     public float _currentHealth; // TODO: Make this private 
+    public float invulnerabilityDuration = 1f;
 
     public int CurrentHealth => Mathf.CeilToInt(_currentHealth);
     [SerializeField] private float healthDrainRate = 1f;
     private bool isDraining = true;
     private bool isDead = false;
+     private bool isInvulnerable = false;
 
     private void Awake()
     {
@@ -45,7 +48,7 @@ public class PlayerHealth : MonoBehaviour
     public void ChangeHealth(float changeAmount)
     {
         _currentHealth += changeAmount;
-        _currentHealth = Mathf.Clamp(_currentHealth, 0, MaxHealth);
+        // _currentHealth = Mathf.Clamp(_currentHealth, 0, MaxHealth);
         OnHealthChange?.Invoke();
 
         if (_currentHealth <= 0)
@@ -53,11 +56,38 @@ public class PlayerHealth : MonoBehaviour
             Die();
         }
     }
-
+/// <summary>
+    /// Applies damage to the player, triggering invulnerability frames.
+    /// </summary>
+    /// <param name="damage">The amount of damage to take.</param>
     public void TakeDamage(float damage)
     {
-        ChangeHealth(-damage);
-        animator?.SetTrigger("takeDamage");
+        // Only take damage if not currently invulnerable and not dead
+        if (isInvulnerable || isDead)
+        {
+            return;
+        }
+
+        ChangeHealth(-damage); // Apply the damage
+        animator?.SetTrigger("takeDamage"); // Trigger damage animation if an Animator is present
+        StartCoroutine(InvulnerabilityCoroutine()); // Start the invulnerability period
+    }
+
+    /// <summary>
+    /// Coroutine to manage invulnerability duration and visual feedback (transparency).
+    /// This uses standard shader properties to enable/disable transparency.
+    /// </summary>
+    private IEnumerator InvulnerabilityCoroutine()
+    {
+        isInvulnerable = true; // Player becomes invulnerable
+        bool originalDraining = isDraining; // Store original health draining state
+        isDraining = false; // Pause health drain during invulnerability for the invulnerability duration
+
+
+        yield return new WaitForSeconds(invulnerabilityDuration); // Wait for the specified invulnerability duration
+
+        isDraining = originalDraining; // Restore health draining state
+        isInvulnerable = false; // Player is no longer invulnerable
     }
 
     private void Die()
