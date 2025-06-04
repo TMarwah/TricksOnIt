@@ -3,7 +3,6 @@ using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(PlayerHealth))]
-
 public class ThirdPersonMovement : MonoBehaviour
 {
     private CharacterController controller;
@@ -38,6 +37,9 @@ public class ThirdPersonMovement : MonoBehaviour
 
     [Header("Air Rotation")]
     public float airFlipSpeed = 360f;
+
+    [Header("Trick Settings")]
+    public float minTrickHeight = 2.0f; // Minimum height above ground to start a trick
 
     [Header("Aiming")]
     public bool isAiming = false;
@@ -209,7 +211,8 @@ public class ThirdPersonMovement : MonoBehaviour
 
         controller.Move(velocity * Time.deltaTime);
 
-        if (!isGrounded && !isFlipping)
+        // Only allow tricks if not grounded, not flipping, and high enough above ground
+        if (!isGrounded && !isFlipping && IsHighEnoughForTrick())
         {
             if (Input.GetKeyDown(KeyCode.R))
                 StartCoroutine(PerformFlip(Vector3.right));
@@ -253,6 +256,18 @@ public class ThirdPersonMovement : MonoBehaviour
 
         Debug.Log("Wall Jump performed!");
     }
+
+    // Only allow tricks if high enough above ground
+    private bool IsHighEnoughForTrick()
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, minTrickHeight + 0.5f, groundMask))
+        {
+            return hit.distance > minTrickHeight;
+        }
+        return true;
+    }
+
     private IEnumerator PerformFlip(Vector3 localAxis)
     {
         isFlipping = true;
@@ -274,6 +289,7 @@ public class ThirdPersonMovement : MonoBehaviour
         if (comboMeter != null)
             comboMeter.AddComboPoint();
     }
+
     public IEnumerator PlungeDownward(float force)
     {
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
@@ -330,7 +346,6 @@ public class ThirdPersonMovement : MonoBehaviour
         yield return StartCoroutine(WaitUntilNotInsideEnemy());
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
         isDashing = false;
-        // Re-enable collisions    }
     }
 
     private IEnumerator WaitUntilNotInsideEnemy()
