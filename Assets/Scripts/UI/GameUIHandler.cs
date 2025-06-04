@@ -12,8 +12,6 @@ public class GameUIHandler : MonoBehaviour
     [Header("Enemy/Boss UI Elements (TextMeshPro)")]
     [Tooltip("Assign your TextMeshProUGUI element that will display enemy count or boss warning.")]
     public TextMeshProUGUI enemiesOrBossText;
-    [Tooltip("Optional: A UI Toolkit VisualElement to show/hide as a boss warning panel.")]
-    public VisualElement bossWarningPanel; // This will be found by name in UIDoc
 
     private Label m_HealthLabel; // Commented out in your original, keeping for reference if needed
 
@@ -32,15 +30,6 @@ public class GameUIHandler : MonoBehaviour
         if (UIDoc != null)
         {
             m_HealthBarMask = UIDoc.rootVisualElement.Q<VisualElement>("HealthBarMask");
-            // If you uncommented m_HealthLabel, find it here:
-            // m_HealthLabel = UIDoc.rootVisualElement.Q<Label>("HealthLabel");
-
-            // Find the boss warning panel from the UIDocument if it exists
-            bossWarningPanel = UIDoc.rootVisualElement.Q<VisualElement>("BossWarningPanel"); // Assuming you name your boss warning panel "BossWarningPanel"
-            if (bossWarningPanel != null)
-            {
-                bossWarningPanel.style.display = DisplayStyle.None; // Hide it initially
-            }
         }
         else
         {
@@ -70,7 +59,10 @@ public class GameUIHandler : MonoBehaviour
         GameState.Instance.OnBossAboutToSpawn += ShowBossWarning;
 
         // Set initial enemy count text
-        UpdateEnemiesText(GameState.Instance.CurrentEnemiesRemaining);
+        if (!GameState.Instance.IsBossAboutToSpawn)
+        {
+            UpdateEnemiesText(GameState.Instance.CurrentEnemiesRemaining);
+        }
     }
 
     private void OnDestroy()
@@ -109,14 +101,13 @@ public class GameUIHandler : MonoBehaviour
     /// <param name="count">The new count of enemies remaining.</param>
     private void UpdateEnemiesText(int count)
     {
-        if (enemiesOrBossText != null)
+        if (!GameState.Instance.IsBossAboutToSpawn && enemiesOrBossText != null)
         {
             enemiesOrBossText.text = $"Enemies Remaining: {count}";
-            // Ensure boss warning is hidden when showing enemy count
-            if (bossWarningPanel != null)
-            {
-                bossWarningPanel.style.display = DisplayStyle.None;
-            }
+        }
+        else
+        {
+            ShowBossWarning();
         }
     }
 
@@ -128,15 +119,42 @@ public class GameUIHandler : MonoBehaviour
     {
         if (enemiesOrBossText != null)
         {
-            enemiesOrBossText.text = "BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING!"; // Change TMPro text to warning
+            enemiesOrBossText.text = "BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING!";
+            enemiesOrBossText.alignment = TextAlignmentOptions.Left;
+            StartCoroutine(ScrollWarningText());
+        }
+    }
+
+    private System.Collections.IEnumerator ScrollWarningText()
+    {
+        float scrollSpeed = 100f; // pixels per second
+        float resetDelay = 0.5f;
+
+        RectTransform rectTransform = enemiesOrBossText.GetComponent<RectTransform>();
+        float startX = rectTransform.anchoredPosition.x;
+        float textWidth = enemiesOrBossText.preferredWidth;
+        float parentWidth = rectTransform.rect.width;
+
+        // Start from the right edge
+        rectTransform.anchoredPosition = new Vector2(parentWidth, rectTransform.anchoredPosition.y);
+
+        while (GameState.Instance != null && GameState.Instance.IsBossAboutToSpawn)
+        {
+            float newX = rectTransform.anchoredPosition.x - scrollSpeed * Time.deltaTime;
+
+            // If text has fully scrolled out, reset to right edge
+            if (newX < -textWidth)
+            {
+                newX = parentWidth;
+                yield return new WaitForSeconds(resetDelay);
+            }
+
+            rectTransform.anchoredPosition = new Vector2(newX, rectTransform.anchoredPosition.y);
+            yield return null;
         }
 
-        if (bossWarningPanel != null)
-        {
-            bossWarningPanel.style.display = DisplayStyle.Flex; // Show the UI Toolkit panel
-            // You might want to add animations, sound effects, or a timer to hide this panel
-            // after a few seconds here, depending on your design.
-            Debug.Log("UI: Boss Warning Panel Activated!");
-        }
+        // Reset position and alignment when done
+        rectTransform.anchoredPosition = new Vector2(startX, rectTransform.anchoredPosition.y);
+        enemiesOrBossText.alignment = TextAlignmentOptions.Center;
     }
 }

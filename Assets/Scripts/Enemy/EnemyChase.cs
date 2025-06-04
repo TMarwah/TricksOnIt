@@ -153,7 +153,7 @@ public class EnemyChase : MonoBehaviour
     public void AttackHit()
     {
         PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
+        if (playerHealth != null && Vector3.Distance(transform.position, player.position) <= attackRange)
         {
             playerHealth.TakeDamage(attackDamage);
             Debug.Log($"Enemy attacked player for {attackDamage} damage at {Time.time}");

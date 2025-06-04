@@ -1,8 +1,10 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 /// <summary>
 /// LevelDebug allows teleporting the player to different spawn points using keyboard shortcuts.
 /// Attach this script to a GameObject in your scene for debugging purposes.
+/// This script also informs GameState about the current level/spawn point.
 /// </summary>
 public class LevelDebug : MonoBehaviour
 {
@@ -31,7 +33,14 @@ public class LevelDebug : MonoBehaviour
       return;
     }
 
-    // Teleport player to the first spawn point on game start
+    if (GameState.Instance == null)
+    {
+        Debug.LogError("LevelDebug: GameState instance not found! Make sure a GameState GameObject exists in your scene.", this);
+        enabled = false;
+        return;
+    }
+
+    // Teleport player to the first spawn point on game start AND set initial level
     TeleportPlayer(0);
   }
 
@@ -75,7 +84,7 @@ public class LevelDebug : MonoBehaviour
   }
 
   /// <summary>
-  /// Teleports the player to the specified spawn point index.
+  /// Teleports the player to the specified spawn point index and updates the GameState.
   /// </summary>
   /// <param name="index">The index of the spawn point in the 'spawnPoints' array.</param>
   private void TeleportPlayer(int index)
@@ -92,26 +101,17 @@ public class LevelDebug : MonoBehaviour
       return;
     }
 
-    player.transform.position = spawnPoints[index].position;
-    Debug.Log($"Player teleported to Spawn Point {index + 1} at position: {spawnPoints[index].position}");
-
-    Rigidbody rb = player.GetComponent<Rigidbody>();
-    if (rb != null)
+    var characterController = player.GetComponent<CharacterController>();
+    if (characterController != null)
     {
-#if UNITY_2022_2_OR_NEWER
-      rb.linearVelocity = Vector3.zero;
-#else
-      rb.velocity = Vector3.zero;
-#endif
-      rb.angularVelocity = Vector3.zero;
+      characterController.enabled = false;
+      player.transform.position = spawnPoints[index].position;
+      Debug.Log($"Player teleported to Spawn Point {index + 1} at position: {spawnPoints[index].position}");
+      characterController.enabled = true;
     }
 
-    // If your player has a CharacterController, you might need to handle it differently
-    // CharacterController cc = player.GetComponent<CharacterController>();
-    // if (cc != null)
-    // {
-    //     // For CharacterController, directly setting position might not work as expected
-    //     // Consider disabling/enabling the CharacterController around the teleport if issues arise
-    // }
+
+    // Inform GameState about the new current level index
+    GameState.Instance.SetCurrentLevel(index); // Assuming spawn point index maps to level index
   }
 }

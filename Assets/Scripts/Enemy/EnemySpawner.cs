@@ -30,7 +30,7 @@ public class EnemySpawner : MonoBehaviour
     [Tooltip("Drag your Player GameObject here, for enemies to target.")]
     public Transform player;
     [Tooltip("Drag your LevelManager GameObject here.")]
-    public LevelManager levelManager; // Renamed from GameManager to LevelManager as per your script
+    private LevelManager levelManager;
 
     private int _enemiesRemainingInLevel; // Total enemies to spawn for the current level
     private int _enemiesSpawnedInCurrentWave;
@@ -88,9 +88,13 @@ public class EnemySpawner : MonoBehaviour
         }
         if (levelManager == null)
         {
-            Debug.LogError("EnemySpawner: LevelManager is not assigned! Please assign the LevelManager in the Inspector.", this);
-            enabled = false;
-            return;
+            levelManager = GetComponentInParent<LevelManager>();
+            if (levelManager == null)
+            {
+                Debug.LogError("EnemySpawner: LevelManager is not assigned and could not be found in parent!", this);
+                enabled = false;
+                return;
+            }
         }
     }
 

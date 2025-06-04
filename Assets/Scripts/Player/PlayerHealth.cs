@@ -18,6 +18,7 @@ public class PlayerHealth : MonoBehaviour
     private bool isDraining = true;
     private bool isDead = false;
      private bool isInvulnerable = false;
+    private Unity.Cinemachine.CinemachineCamera virtualCamera;
 
     private void Awake()
     {
@@ -26,6 +27,7 @@ public class PlayerHealth : MonoBehaviour
         {
             animator = foundAnimator;
         }
+        virtualCamera = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
     }
     private void Start()
     {
@@ -70,6 +72,17 @@ public class PlayerHealth : MonoBehaviour
 
         ChangeHealth(-damage); // Apply the damage
         animator?.SetTrigger("takeDamage"); // Trigger damage animation if an Animator is present
+
+        // Get the CameraEffects script from the virtual camera and call Shake
+        if (virtualCamera != null)
+        {
+            var cameraEffects = virtualCamera.GetComponent<CameraEffects>();
+            if (cameraEffects != null)
+            {
+                cameraEffects.Shake(0.1f);
+            }
+        }
+
         StartCoroutine(InvulnerabilityCoroutine()); // Start the invulnerability period
     }
 

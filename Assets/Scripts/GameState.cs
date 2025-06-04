@@ -1,8 +1,9 @@
+using System;
 using UnityEngine;
-using System; // Required for Action
+using System.Collections.Generic;
 
 /// <summary>
-/// GameState script to manage global game progress, especially enemy counts for UI display.
+/// GameState script to manage global game progress, including current level index and enemy counts.
 /// This is a Singleton, so it will persist across scenes if marked DontDestroyOnLoad.
 /// </summary>
 public class GameState : MonoBehaviour
@@ -14,6 +15,8 @@ public class GameState : MonoBehaviour
     public event Action<int> OnEnemiesRemainingChanged;
     // Event to notify when the boss is about to spawn
     public event Action OnBossAboutToSpawn;
+    // NEW: Event to notify when the current level index changes
+    public event Action<int> OnLevelIndexChanged;
 
     private int _currentEnemiesRemaining;
     public int CurrentEnemiesRemaining
@@ -24,7 +27,6 @@ public class GameState : MonoBehaviour
             if (_currentEnemiesRemaining != value)
             {
                 _currentEnemiesRemaining = value;
-                // Invoke the event whenever the count changes
                 OnEnemiesRemainingChanged?.Invoke(_currentEnemiesRemaining);
             }
         }
@@ -47,35 +49,60 @@ public class GameState : MonoBehaviour
         }
     }
 
+    // NEW: Property to hold and update the current level index
+    // Initialize to 0 so a LevelManager for level 0 can activate immediately.
+    private int _currentLevelIndex = 0;
+    public int CurrentLevelIndex
+    {
+        get { return _currentLevelIndex; }
+        private set
+        {
+            if (_currentLevelIndex != value)
+            {
+                _currentLevelIndex = value;
+                Debug.Log($"GameState: Current Level Index changed to {_currentLevelIndex}");
+                OnLevelIndexChanged?.Invoke(_currentLevelIndex); // Notify listeners
+            }
+        }
+    }
+
     void Awake()
     {
         // Implement Singleton pattern
         if (Instance == null)
         {
             Instance = this;
-            // If you want this GameState to persist across all levels/scenes:
+            // You might want to uncomment this if GameState should persist across scene loads
             // DontDestroyOnLoad(gameObject);
         }
         else
         {
-            // If another instance already exists, destroy this one
             Destroy(gameObject);
         }
     }
 
+    // NEW: Method to set the current level, usually called by LevelDebug or level transitions
+    public void SetCurrentLevel(int levelIndex)
+    {
+        CurrentLevelIndex = levelIndex;
+        // When a new level is set, you might want to reset other level-specific state
+        IsBossAboutToSpawn = false;
+        // Enemy count will be set by the active LevelManager itself when it initializes.
+    }
+
     /// <summary>
-    /// Call this from LevelManager to set the total enemies for the current level.
+    /// Call this from the active LevelManager to set the total enemies for the current level.
     /// </summary>
     /// <param name="total">Total enemies in the current level.</param>
     public void SetTotalEnemiesForLevel(int total)
     {
         CurrentEnemiesRemaining = total;
         IsBossAboutToSpawn = false; // Reset boss flag for new level
-        Debug.Log($"GameState: Total enemies for level set to {total}");
+        Debug.Log($"GameState: Total enemies for current level set to {total}");
     }
 
     /// <summary>
-    /// Call this from LevelManager (via EnemyHealth) when an enemy is defeated.
+    /// Call this from EnemyHealth when an enemy is defeated.
     /// </summary>
     public void DecrementEnemiesRemaining()
     {
@@ -84,7 +111,7 @@ public class GameState : MonoBehaviour
     }
 
     /// <summary>
-    /// Call this from LevelManager when the boss spawn condition is met.
+    /// Call this from the active LevelManager when the boss spawn condition is met.
     /// </summary>
     public void NotifyBossAboutToSpawn()
     {
@@ -92,5 +119,5 @@ public class GameState : MonoBehaviour
         Debug.Log("GameState: Boss is about to spawn!");
     }
 
-    // You can add more global game state variables here (e.g., player score, game over state, current level number)
+    // You can add more global game state variables here (e.g., player score, game over state)
 }
