@@ -5,8 +5,8 @@ public class ComboMeter : MonoBehaviour
 {
     [Header("Combo Settings")]
     public int maxComboPoints = 100;
-    public int pointsPerTrick = 10;
-    public int currentComboPoints = 30;
+    public int pointsPerTrick = 5;
+    public int currentComboPoints = 0;
 
     [Header("UI")]
     public TextMeshProUGUI comboPointsText;   // Assign in Inspector (shows number)
@@ -91,9 +91,9 @@ public class ComboMeter : MonoBehaviour
             comboPointsText.text = currentComboPoints.ToString();
 
             // SLAM effect when number changes (from AddComboPoint)
-            if (slamNumber || currentComboPoints != lastPoints)
+            if (slamNumber && currentComboPoints != lastPoints)
             {
-                comboPointsText.transform.localScale = new Vector3(slamScale, slamScale, 1f);
+                comboPointsText.transform.localScale = new Vector3(slamScale, slamScale, 0.5f);
                 lastPoints = currentComboPoints;
             }
         }
@@ -106,7 +106,7 @@ public class ComboMeter : MonoBehaviour
             comboRatingText.color = GetRatingColor(rating);
 
             // SLAM effect when the letter changes
-            if (rating != lastRating)
+            if (slamNumber && rating != lastRating)
             {
                 comboRatingText.transform.localScale = new Vector3(slamScale, slamScale, 1f);
                 lastRating = rating;

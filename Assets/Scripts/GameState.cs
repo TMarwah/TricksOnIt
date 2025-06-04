@@ -111,6 +111,21 @@ public class GameState : MonoBehaviour
     }
 
     /// <summary>
+    /// Call this when the boss is defeated to signal level completion and advance to the next level.
+    /// </summary>
+    public void NotifyBossDefeatedAndAdvanceLevel()
+    {
+        Debug.Log("GameState: Boss defeated! Advancing to next level.");
+        if (CurrentLevelIndex >= 3)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
+            return;
+        }
+        SetCurrentLevel(CurrentLevelIndex + 1);
+        // Optionally, you can trigger additional events or logic here for level completion.
+    }
+
+    /// <summary>
     /// Call this from the active LevelManager when the boss spawn condition is met.
     /// </summary>
     public void NotifyBossAboutToSpawn()

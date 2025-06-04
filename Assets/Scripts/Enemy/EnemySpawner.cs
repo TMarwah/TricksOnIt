@@ -194,6 +194,7 @@ public class EnemySpawner : MonoBehaviour
 
         GameObject boss = Instantiate(bossPrefab, spawnPosition, Quaternion.identity);
         EnemyChase bossChase = boss.GetComponent<EnemyChase>();
+        bossChase.isBoss = true;
         if (bossChase != null)
         {
             bossChase.player = player;

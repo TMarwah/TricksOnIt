@@ -287,7 +287,10 @@ public class ThirdPersonMovement : MonoBehaviour
 
         // Add combo point when flip is completed
         if (comboMeter != null)
-            comboMeter.AddComboPoint(comboMeter.pointsPerTrick);
+        {
+            int randomBonus = UnityEngine.Random.Range(0, 6); // 0 to 5 inclusive
+            comboMeter.AddComboPoint(comboMeter.pointsPerTrick + randomBonus);
+        }
     }
 
     public IEnumerator PlungeDownward(float force)

@@ -10,6 +10,7 @@ public class EnemyChase : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
     private EnemyHealth health;
+    public bool isBoss = false;
 
     [Header("Attacks")]
     public float attackRange = 1.5f;
@@ -41,8 +42,13 @@ public class EnemyChase : MonoBehaviour
     void Update()
     {
         if (agent == null || player == null || (health != null && health.isDead))
+        {
+            if (isBoss)
+            {
+                GameState.Instance.NotifyBossDefeatedAndAdvanceLevel();
+            }
             return;
-
+        }
         if (agent.isOnOffMeshLink)
         {
             StartCoroutine(ClimbAcrossLink());

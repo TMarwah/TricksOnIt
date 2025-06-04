@@ -93,6 +93,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
+  isBoss: 0
   attackRange: 1.5
   attackCooldown: 1
   attackDamage: 5
@@ -231,8 +232,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26bbc067a6e692d4381b6dafc2507c33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 100
-  deathVFX: {fileID: 3500883190020426963, guid: 9e15fafdf3d8784419547a150bdfc53a, type: 3}
+  maxHealth: 50
+  deathVFX: {fileID: 5238538877814813142, guid: 47096eff328e11a418ace7db2d72aa97, type: 3}
   isDead: 0
 --- !u!95 &-5060009451449788878
 Animator:

@@ -37,6 +37,23 @@ public class PlayerAttack : MonoBehaviour
     public GameObject hitSparkPrefab;
     public GameObject plungeAttackVFXPrefab;
 
+        [Header("Audio VFX")]
+    [Tooltip("The audio clip for shooting a pellet.")]
+    public AudioClip pelletShootSound;
+    [Tooltip("The volume for the pellet shooting sound.")]
+    [Range(0f, 1f)]
+    public float pelletShootVolume = 0.8f;
+    [Tooltip("The audio clip for a successful hit on an enemy.")]
+    public AudioClip hitSound;
+    [Tooltip("The volume for the hit sound.")]
+    [Range(0f, 1f)]
+    public float hitVolume = 0.7f;
+    [Tooltip("The audio clip for the plunge attack impact.")]
+    public AudioClip plungeImpactSound;
+    [Tooltip("The volume for the plunge impact sound.")]
+    [Range(0f, 1f)]
+    public float plungeImpactVolume = 1.0f;
+
     private bool isAiming = false;
     private float shootComboTimer = 0f;
 
@@ -112,18 +129,10 @@ public class PlayerAttack : MonoBehaviour
         // --- LIGHT ATTACK ---
         if (Input.GetMouseButtonDown(0) && playerController.isGrounded && lightAttackTimer <= 0f)
         {
-            if (comboMeter != null && comboMeter.HasComboPoints())
-            {
-                comboMeter.SpendComboPoint();
-                PerformLightAttack();
-                lightAttackTimer = lightAttackCooldown;
-            }
-            else
-            {
-                // Optionally: play "not enough combo" sound or feedback
-            }
+            comboMeter.SpendComboPoint();
+            PerformLightAttack();
+            lightAttackTimer = lightAttackCooldown;
         }
-        // --- PLUNGE ATTACK (SLAM): Requires 5 combo points ---
         else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded)
         {
             if (comboMeter != null && comboMeter.HasComboPoints(5))
@@ -137,7 +146,6 @@ public class PlayerAttack : MonoBehaviour
             }
         }
 
-        // --- PLUNGE VFX ON LANDING ---
         if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame)
         {
             if (plungeAttackVFXPrefab != null)
@@ -145,6 +153,11 @@ public class PlayerAttack : MonoBehaviour
                 Vector3 vfxPos = transform.position;
                 vfxPos.y -= 1f;
                 Instantiate(plungeAttackVFXPrefab, vfxPos, Quaternion.identity);
+            }
+            // NEW: Play plunge impact sound
+            if (plungeImpactSound != null)
+            {
+                AudioSource.PlayClipAtPoint(plungeImpactSound, transform.position, plungeImpactVolume);
             }
             didPlungeAttack = false;
         }
@@ -158,6 +171,11 @@ public class PlayerAttack : MonoBehaviour
 
         for (int i = 0; i < pelletsPerShot; i++)
         {
+            if (pelletShootSound != null)
+            {
+                AudioSource.PlayClipAtPoint(pelletShootSound, transform.position, pelletShootVolume);
+            }
+
             Transform enemy = FindEnemyInSprayCone(rangedAttackRange, rangedAttackAngle);
             if (enemy != null)
             {
@@ -208,6 +226,11 @@ public class PlayerAttack : MonoBehaviour
         {
             agent.enabled = false;
             health.TakeDamage(damage);
+
+            if (hitSound != null)
+            {
+                AudioSource.PlayClipAtPoint(hitSound, enemy.position, hitVolume);
+            }
 
             if (force >= 5f)
             {
