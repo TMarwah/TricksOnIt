@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.VFX; // Import VFX Graph namespace
 using System.Collections;
 
 [RequireComponent(typeof(PlayerHealth))]
@@ -12,6 +11,7 @@ public class ThirdPersonMovement : MonoBehaviour
     private PlayerHealth playerHealth;
     private Transform model;
     private Animator animator;
+    private ComboMeter comboMeter;
 
     [Header("Movement")]
     public float speed = 6f;
@@ -89,6 +89,7 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
         airControlMultiplier = airControlFactor;
+        comboMeter = FindObjectOfType<ComboMeter>();
     }
 
     void Update()
@@ -252,8 +253,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         Debug.Log("Wall Jump performed!");
     }
-
-    IEnumerator PerformFlip(Vector3 localAxis)
+    private IEnumerator PerformFlip(Vector3 localAxis)
     {
         isFlipping = true;
         float rotated = 0f;
@@ -266,80 +266,85 @@ public class ThirdPersonMovement : MonoBehaviour
             yield return null;
         }
 
+        // Snap to exact rotation
         transform.Rotate(localAxis * (360f - rotated), Space.Self);
         isFlipping = false;
-    }
 
+        // Add combo point when flip is completed
+        if (comboMeter != null)
+            comboMeter.AddComboPoint();
+    }
     public IEnumerator PlungeDownward(float force)
     {
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
         velocity.y = -Mathf.Abs(force);
         velocity.x = 0f;
         velocity.z = 0f;
+
         // Wait until PlayerAttack.didPlungeAttack is true before continuing
         PlayerAttack playerAttack = GetComponent<PlayerAttack>();
+        yield return new WaitUntil(() => playerAttack.didPlungeAttack);
+
         if (playerAttack != null)
         {
+            yield return new WaitForSeconds(0.5f);
             yield return new WaitUntil(() => playerAttack.didPlungeAttack);
         }
-        yield return new WaitForSeconds(0.5f);
 
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
+        yield return new WaitForSeconds(0.5f);
     }
 
     public IEnumerator DashForward()
     {
+        Vector3 dashDirection = transform.forward;
         isDashing = true;
         float timer = 0f;
-        Vector3 dashDirection = transform.forward;
-
-        // Ignore collisions with enemies
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
 
+        // Ignore collisions with enemies
         while (timer < dashDuration)
         {
-            isGrounded = true;
-
-            // Move player forward
             controller.Move(dashDirection * dashForce * Time.deltaTime);
 
-            // Smoothly interpolate model rotation and position
+            // Move player forward
             float t = timer / dashDuration;
 
-            timer += Time.deltaTime;
+            // Smoothly interpolate model rotation and position
             yield return null;
 
-            if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
-            {
-                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                velocity.x = horizontalVelocity.x * airControlFactor;
-                velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
-                animator.SetTrigger("JumpTrigger");
-                break;
-            }
+            timer += Time.deltaTime;
         }
+
+        if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            velocity.x = horizontalVelocity.x * airControlFactor * 1.2f;
+            velocity.z = horizontalVelocity.z * airControlFactor * 1.2f;
+            animator.SetTrigger("JumpTrigger");
+        }
+
+        yield return StartCoroutine(WaitUntilNotInsideEnemy());
 
         // Wait until no longer overlapping enemies
         yield return StartCoroutine(WaitUntilNotInsideEnemy());
-
-        // Re-enable collisions
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
         isDashing = false;
+        // Re-enable collisions    }
     }
 
     private IEnumerator WaitUntilNotInsideEnemy()
     {
         float checkRadius = 0.5f;
+        float maxWaitTime = 0.5f;
         LayerMask enemyMask = LayerMask.GetMask("Enemy");
         float timer = 0f;
-        float maxWaitTime = 0.5f;
-
         while (Physics.CheckSphere(transform.position, checkRadius, enemyMask))
         {
             if (timer > maxWaitTime)
                 yield break;
-            timer += Time.deltaTime;
             yield return null;
+            timer += Time.deltaTime;
         }
     }
 }
