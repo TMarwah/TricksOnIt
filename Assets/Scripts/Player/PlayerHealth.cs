@@ -56,7 +56,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        ChangeHealth(damage);
+        ChangeHealth(-damage);
         animator?.SetTrigger("takeDamage");
     }
 

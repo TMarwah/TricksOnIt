@@ -2,10 +2,6 @@ using UnityEngine;
 using UnityEngine.AI;
 using Unity.AI.Navigation;
 using System.Collections;
-
-using UnityEngine;
-using UnityEngine.AI;
-using System.Collections;
 using System.Collections.Generic;
 
 public class EnemyChase : MonoBehaviour
@@ -160,6 +156,7 @@ public class EnemyChase : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.TakeDamage(attackDamage);
+            Debug.Log($"Enemy attacked player for {attackDamage} damage at {Time.time}");
         }
     }
 }

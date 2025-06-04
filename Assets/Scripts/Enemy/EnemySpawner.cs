@@ -173,17 +173,6 @@ public class EnemySpawner : MonoBehaviour
         {
             Debug.LogWarning("EnemySpawner: Spawned enemy does not have an 'EnemyChase' component. Player target will not be set.");
         }
-
-        // Add a script to the enemy that notifies the LevelManager when it dies
-        EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>(); // You'll need to create this script
-        if (enemyHealth != null)
-        {
-            enemyHealth.levelManager = levelManager; // Pass a reference to the LevelManager
-        }
-        else
-        {
-            Debug.LogWarning("EnemySpawner: Spawned enemy does not have an 'EnemyHealth' component. LevelManager will not be notified of enemy defeats.");
-        }
     }
 
     /// <summary>
@@ -208,17 +197,6 @@ public class EnemySpawner : MonoBehaviour
         else
         {
             Debug.LogWarning("EnemySpawner: Spawned boss does not have an 'EnemyChase' component. Player target will not be set.");
-        }
-
-        // Add a script to the boss that notifies the LevelManager when it dies
-        EnemyHealth bossHealth = boss.GetComponent<EnemyHealth>(); // You'll need to create this script
-        if (bossHealth != null)
-        {
-            bossHealth.levelManager = levelManager; // Pass a reference to the LevelManager
-        }
-        else
-        {
-            Debug.LogWarning("EnemySpawner: Spawned boss does not have an 'EnemyHealth' component. LevelManager will not be notified of boss defeat.");
         }
 
         Debug.Log("Boss spawned!");

@@ -4,9 +4,9 @@ using UnityEngine.UI;
 public class ComboMeter : MonoBehaviour
 {
     [Header("Combo Settings")]
-    public int maxComboPoints = 10;
-    public int pointsPerTrick = 1;
-    public int currentComboPoints = 0;
+    public int maxComboPoints = 100;
+    public int pointsPerTrick = 10;
+    public int currentComboPoints = 30;
 
     [Header("UI")]
     public Slider comboSlider; // Assign a Unity UI Slider in the inspector
