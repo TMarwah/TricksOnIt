@@ -19,6 +19,7 @@ public class GameState : MonoBehaviour
     public event Action<int> OnLevelIndexChanged;
 
     private int _currentEnemiesRemaining;
+    public AudioClip alarmSfx;
     public int CurrentEnemiesRemaining
     {
         get { return _currentEnemiesRemaining; }
@@ -130,6 +131,10 @@ public class GameState : MonoBehaviour
     /// </summary>
     public void NotifyBossAboutToSpawn()
     {
+        if (alarmSfx != null)
+        {
+            AudioSource.PlayClipAtPoint(alarmSfx, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+        }
         IsBossAboutToSpawn = true;
         Debug.Log("GameState: Boss is about to spawn!");
     }
