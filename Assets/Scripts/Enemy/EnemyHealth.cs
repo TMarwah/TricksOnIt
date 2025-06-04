@@ -9,6 +9,8 @@ public class EnemyHealth : MonoBehaviour
     private Animator animator;
     public bool isDead = false;
 
+    public LevelManager levelManager; // Add this public reference
+
     void Start()
     {
         currentHealth = maxHealth;
@@ -51,7 +53,16 @@ public class EnemyHealth : MonoBehaviour
         if (agent != null) agent.enabled = false;
 
         Collider col = GetComponent<Collider>();
-        if (col != null) col.enabled = false;
+        // Notify LevelManager if assigned, otherwise try to find it
+        LevelManager managerToNotify = levelManager != null ? levelManager : FindObjectOfType<LevelManager>();
+        if (managerToNotify != null)
+        {
+            managerToNotify.EnemyDefeated();
+        }
+        else
+        {
+            Debug.LogWarning("EnemyHealth: LevelManager not found. Cannot notify of enemy death.");
+        }
 
         Destroy(gameObject, 2f); // give time for death animation to play
     }
