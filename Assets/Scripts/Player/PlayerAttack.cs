@@ -73,15 +73,16 @@ public class PlayerAttack : MonoBehaviour
         playerController.isAiming = isAiming;
         animator.SetBool("isAiming", isAiming);
 
-        // --- SHOOTING: Holding Q on ground spends 1 combo point per second ---
+        // --- SHOOTING: Holding Q on ground spends 1 trick's worth of combo points per second ---
         if (playerController.isGrounded && leftHeld)
         {
             shootComboTimer += Time.deltaTime;
             if (shootComboTimer >= 1f)
             {
-                if (comboMeter != null && comboMeter.HasComboPoints())
+                int pointsToSpend = comboMeter != null ? comboMeter.pointsPerTrick : 1;
+                if (comboMeter != null && comboMeter.HasComboPoints(pointsToSpend))
                 {
-                    comboMeter.SpendComboPoint();
+                    comboMeter.SpendComboPoint(pointsToSpend);
                     StartCoroutine(PerformRangedAttack("Left"));
                     leftCooldownTimer = handCooldown;
                 }

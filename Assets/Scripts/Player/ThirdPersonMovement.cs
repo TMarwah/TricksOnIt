@@ -287,7 +287,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         // Add combo point when flip is completed
         if (comboMeter != null)
-            comboMeter.AddComboPoint();
+            comboMeter.AddComboPoint(comboMeter.pointsPerTrick);
     }
 
     public IEnumerator PlungeDownward(float force)
