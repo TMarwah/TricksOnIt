@@ -1965,7 +1965,7 @@ MonoBehaviour:
   - trackName: Lobby
     clip: {fileID: 8300000, guid: 05bc4b490a2524718b5f7875135b7b4b, type: 3}
   - trackName: Level1
-    clip: {fileID: 8300000, guid: 233e0e052227541f8a32747eabbb215d, type: 3}
+    clip: {fileID: 8300000, guid: 5b6ebe4fc2e1b4c6f92754128249c6fc, type: 3}
 --- !u!1 &1170642043
 GameObject:
   m_ObjectHideFlags: 0
