@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3a7b43c87cd60473bb2a61c98d432ee9
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 20359
+  packageName: Japanese Otaku City
+  packageVersion: 1.0
+  assetPath: Assets/ZRNAssets/PQAssets/Query-Chan/Scripts/GUIControllerFlying.cs
+  uploadId: 275968

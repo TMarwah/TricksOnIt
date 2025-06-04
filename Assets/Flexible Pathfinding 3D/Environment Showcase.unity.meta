@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5a9c910ea249de74282939c2b245f9a7
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Environment Showcase.unity
+  uploadId: 726447

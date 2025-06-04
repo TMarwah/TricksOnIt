@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6dabc56b7b1274454b67ea3c24e7ada0
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 20359
+  packageName: Japanese Otaku City
+  packageVersion: 1.0
+  assetPath: Assets/ZRNAssets/005339_08932_25_14/Scripts/FlyThroughController.cs
+  uploadId: 275968

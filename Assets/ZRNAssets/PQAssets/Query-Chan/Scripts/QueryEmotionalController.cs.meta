@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b9666f17ea3334425833d0d35e58d1be
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 20359
+  packageName: Japanese Otaku City
+  packageVersion: 1.0
+  assetPath: Assets/ZRNAssets/PQAssets/Query-Chan/Scripts/QueryEmotionalController.cs
+  uploadId: 275968

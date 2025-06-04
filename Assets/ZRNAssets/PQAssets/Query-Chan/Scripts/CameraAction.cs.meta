@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 410d8cba769844705b98ce240462fa0c
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 20359
+  packageName: Japanese Otaku City
+  packageVersion: 1.0
+  assetPath: Assets/ZRNAssets/PQAssets/Query-Chan/Scripts/CameraAction.cs
+  uploadId: 275968
