@@ -11,17 +11,7 @@ public class MainMenu : MonoBehaviour
     public void Level1()
     {
         MusicManager.Instance.PlayMusic("Level1");
-        SceneManager.LoadScene("SampleScene");
-    }
-    public void Level2()
-    {
-        MusicManager.Instance.PlayMusic("Level1");
-        SceneManager.LoadScene("Enemy Pathfinding");
-    }
-    public void Level3()
-    {
-        MusicManager.Instance.PlayMusic("Level1");
-        SceneManager.LoadScene("Enemy Pathfinding");
+        SceneManager.LoadScene("MainGame");
     }
     public void Quit()
     {

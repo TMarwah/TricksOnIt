@@ -105,7 +105,7 @@ public class PlayerAttack : MonoBehaviour
                 }
                 else
                 {
-                    // Optionally: feedback for not enough combo points
+                    BlurbText.Instance.TypeText("I can't do that right now!");
                 }
                 shootComboTimer = 0f;
             }
@@ -142,7 +142,7 @@ public class PlayerAttack : MonoBehaviour
             }
             else
             {
-                // Optionally: play "not enough combo" sound or feedback
+                BlurbText.Instance.TypeText("I can't do that right now!");
             }
         }
 
