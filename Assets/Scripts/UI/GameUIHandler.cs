@@ -12,6 +12,7 @@ public class GameUIHandler : MonoBehaviour
     [Header("Enemy/Boss UI Elements (TextMeshPro)")]
     [Tooltip("Assign your TextMeshProUGUI element that will display enemy count or boss warning.")]
     public TextMeshProUGUI enemiesOrBossText;
+    public TextMeshProUGUI healthText;
 
     private Label m_HealthLabel; // Commented out in your original, keeping for reference if needed
 
@@ -89,6 +90,12 @@ public class GameUIHandler : MonoBehaviour
             float normalized = PlayerHealth.HealthNormalized();
             // m_HealthLabel.text = $"{PlayerHealth.CurrentHealth}/{PlayerHealth.MaxHealth}";
             m_HealthBarMask.style.width = Length.Percent(normalized * 100f);
+        }
+
+        if (healthText != null && PlayerHealth != null)
+        {
+            int healthBars = Mathf.CeilToInt(PlayerHealth.CurrentHealth / 5f);
+            healthText.text = new string('|', healthBars);
         }
     }
 

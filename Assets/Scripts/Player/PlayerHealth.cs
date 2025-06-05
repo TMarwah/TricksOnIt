@@ -58,6 +58,16 @@ public class PlayerHealth : MonoBehaviour
             Die();
         }
     }
+
+    /// <summary>
+    /// Restores the player's health to full.
+    /// </summary>
+    public void RestoreHealthToFull()
+    {
+        _currentHealth = MaxHealth;
+        OnHealthChange?.Invoke();
+    }
+
 /// <summary>
     /// Applies damage to the player, triggering invulnerability frames.
     /// </summary>

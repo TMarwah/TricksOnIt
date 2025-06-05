@@ -20,6 +20,7 @@ public class GameState : MonoBehaviour
     public AudioClip alarmSfx;
 
     private int _currentEnemiesRemaining;
+    public GameObject player;
 
     public int CurrentEnemiesRemaining
     {
@@ -44,7 +45,6 @@ public class GameState : MonoBehaviour
             if (_timer != value)
             {
                 _timer = value;
-                Debug.Log($"GameState: Timer updated to {_timer}");
             }
         }
     }
@@ -115,6 +115,11 @@ public class GameState : MonoBehaviour
         // When a new level is set, you might want to reset other level-specific state
         IsBossAboutToSpawn = false;
         // Enemy count will be set by the active LevelManager itself when it initializes.
+        PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+        if (playerHealth != null)
+        {
+            playerHealth.RestoreHealthToFull();
+        }
         Timer = 0;
     }
 
@@ -126,7 +131,6 @@ public class GameState : MonoBehaviour
     {
         CurrentEnemiesRemaining = total;
         IsBossAboutToSpawn = false; // Reset boss flag for new level
-        Debug.Log($"GameState: Total enemies for current level set to {total}");
     }
 
     /// <summary>
@@ -135,7 +139,6 @@ public class GameState : MonoBehaviour
     public void DecrementEnemiesRemaining()
     {
         CurrentEnemiesRemaining--;
-        Debug.Log($"GameState: Enemies remaining: {CurrentEnemiesRemaining}");
     }
 
     /// <summary>
@@ -147,7 +150,9 @@ public class GameState : MonoBehaviour
         LevelDebug levelDebug = GetComponent<LevelDebug>();
         if (levelDebug != null)
         {
-            levelDebug.TeleportPlayer(CurrentLevelIndex);
+            int targetLevel = CurrentLevelIndex + 1;
+            Debug.Log($"GameState: Attempting to teleport to level index: {targetLevel} (from current: {CurrentLevelIndex})");
+            levelDebug.TeleportPlayer(targetLevel);
         }
         // Optionally, you can trigger additional events or logic here for level completion.
     }
@@ -162,7 +167,6 @@ public class GameState : MonoBehaviour
             AudioSource.PlayClipAtPoint(alarmSfx, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
         }
         IsBossAboutToSpawn = true;
-        Debug.Log("GameState: Boss is about to spawn!");
     }
 
     // You can add more global game state variables here (e.g., player score, game over state)

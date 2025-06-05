@@ -117,11 +117,11 @@ public class ComboMeter : MonoBehaviour
     string GetComboRating()
     {
         float percent = (float)currentComboPoints / maxComboPoints;
-        if (percent >= 5f / 6f) return "A";
-        if (percent >= 4f / 6f) return "B";
-        if (percent >= 3f / 6f) return "C";
-        if (percent >= 2f / 6f) return "D";
-        if (percent >= 1f / 6f) return "E";
+        if (percent >= 5f / 6f) return "S";
+        if (percent >= 4f / 6f) return "A";
+        if (percent >= 3f / 6f) return "B";
+        if (percent >= 2f / 6f) return "C";
+        if (percent >= 1f / 6f) return "D";
         return "F";
     }
 
@@ -129,11 +129,11 @@ public class ComboMeter : MonoBehaviour
     {
         switch (rating)
         {
+            case "S": return new Color(Random.value, Random.value, Random.value);
             case "A": return Color.green;
             case "B": return Color.Lerp(Color.green, Color.yellow, 0.5f);
             case "C": return Color.yellow;
             case "D": return new Color(1f, 0.65f, 0f); // orange
-            case "E": return new Color(1f, 0.3f, 0f);  // reddish-orange
             case "F": return Color.red;
             default: return Color.white;
         }

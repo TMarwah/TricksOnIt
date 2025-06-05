@@ -8,6 +8,8 @@ public class BlurbText : MonoBehaviour
     [SerializeField] private float typingSpeed = 0.1f;
     [SerializeField] private float lingerDuration = 2f;
 
+    private Coroutine typingCoroutine;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -25,7 +27,6 @@ public class BlurbText : MonoBehaviour
         }
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         if (textMeshPro != null)
@@ -38,8 +39,13 @@ public class BlurbText : MonoBehaviour
     {
         if (textMeshPro != null)
         {
+            if (typingCoroutine != null)
+            {
+                StopCoroutine(typingCoroutine); // Stop any ongoing typing coroutine
+            }
+
             textMeshPro.text = ""; // Reset text before typing
-            StartCoroutine(TypeTextCoroutine(fullText));
+            typingCoroutine = StartCoroutine(TypeTextCoroutine(fullText));
         }
     }
 
@@ -54,5 +60,6 @@ public class BlurbText : MonoBehaviour
         yield return new WaitForSeconds(lingerDuration);
 
         textMeshPro.text = "";
+        typingCoroutine = null; // Clear the reference when done
     }
 }
