@@ -4,7 +4,6 @@ using System.Collections;
 public class BlurbText : MonoBehaviour
 {
     public static BlurbText Instance { get; private set; }
-
     private TMPro.TextMeshProUGUI textMeshPro;
     [SerializeField] private float typingSpeed = 0.1f;
     [SerializeField] private float lingerDuration = 2f;
@@ -53,5 +52,7 @@ public class BlurbText : MonoBehaviour
         }
 
         yield return new WaitForSeconds(lingerDuration);
+
+        textMeshPro.text = "";
     }
 }

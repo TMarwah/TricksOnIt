@@ -9,8 +9,8 @@ public class ComboMeter : MonoBehaviour
     public int currentComboPoints = 0;
 
     [Header("UI")]
-    public TextMeshProUGUI comboPointsText;   // Assign in Inspector (shows number)
-    public TextMeshProUGUI comboRatingText;   // Assign in Inspector (shows letter)
+    public TextMeshProUGUI comboPointsText;
+    public TextMeshProUGUI comboRatingText;
 
     private float pulseTimer = 0f;
     private float pulseSpeed = 2f;
@@ -64,7 +64,7 @@ public class ComboMeter : MonoBehaviour
     public void AddComboPoint(int amount = 1)
     {
         currentComboPoints = Mathf.Clamp(currentComboPoints + amount, 0, maxComboPoints);
-        UpdateUI(true); // true = slam number
+        UpdateUI(true);
     }
 
     public bool SpendComboPoint(int amount = 1)

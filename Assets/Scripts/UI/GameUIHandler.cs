@@ -104,6 +104,8 @@ public class GameUIHandler : MonoBehaviour
         if (!GameState.Instance.IsBossAboutToSpawn && enemiesOrBossText != null)
         {
             enemiesOrBossText.text = $"Enemies Remaining: {count}";
+            enemiesOrBossText.alignment = TextAlignmentOptions.Center;
+
         }
         else
         {
@@ -119,7 +121,7 @@ public class GameUIHandler : MonoBehaviour
     {
         if (enemiesOrBossText != null)
         {
-            enemiesOrBossText.text = "BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING!";
+            enemiesOrBossText.text = "BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING! BOSS INCOMING!";
             enemiesOrBossText.alignment = TextAlignmentOptions.Left;
             StartCoroutine(ScrollWarningText());
         }

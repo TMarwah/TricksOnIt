@@ -17,9 +17,10 @@ public class GameState : MonoBehaviour
     public event Action OnBossAboutToSpawn;
     // NEW: Event to notify when the current level index changes
     public event Action<int> OnLevelIndexChanged;
+    public AudioClip alarmSfx;
 
     private int _currentEnemiesRemaining;
-    public AudioClip alarmSfx;
+
     public int CurrentEnemiesRemaining
     {
         get { return _currentEnemiesRemaining; }
@@ -29,6 +30,21 @@ public class GameState : MonoBehaviour
             {
                 _currentEnemiesRemaining = value;
                 OnEnemiesRemainingChanged?.Invoke(_currentEnemiesRemaining);
+            }
+        }
+    }
+
+    [SerializeField] private TMPro.TextMeshProUGUI timerText;
+    private float _timer;
+    public float Timer
+    {
+        get { return _timer; }
+        private set
+        {
+            if (_timer != value)
+            {
+                _timer = value;
+                Debug.Log($"GameState: Timer updated to {_timer}");
             }
         }
     }
@@ -82,6 +98,16 @@ public class GameState : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        Timer += Time.deltaTime;
+        // Reference a TMPro element to display the timer
+        if (timerText != null)
+        {
+            timerText.text = $"{Timer:F2}";
+        }
+    }
+
     // NEW: Method to set the current level, usually called by LevelDebug or level transitions
     public void SetCurrentLevel(int levelIndex)
     {
@@ -89,6 +115,7 @@ public class GameState : MonoBehaviour
         // When a new level is set, you might want to reset other level-specific state
         IsBossAboutToSpawn = false;
         // Enemy count will be set by the active LevelManager itself when it initializes.
+        Timer = 0;
     }
 
     /// <summary>
