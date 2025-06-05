@@ -6,7 +6,11 @@ public class ComboMeter : MonoBehaviour
     [Header("Combo Settings")]
     public int maxComboPoints = 100;
     public int pointsPerTrick = 5;
-    public int currentComboPoints = 0;
+    public float currentComboPoints = 0f;
+    public float scoreDrainRate = 0.01f;
+    public float scoreDrainDelay = 5f; // Delay before draining starts
+
+    private float lastScoreIncreaseTime = 0f; // Tracks the last time combo points were added
 
     [Header("UI")]
     public TextMeshProUGUI comboPointsText;
@@ -17,7 +21,7 @@ public class ComboMeter : MonoBehaviour
     private float pulseScale = 1.2f;
 
     private string lastRating = "";
-    private int lastPoints = -1;
+    private float lastPoints = -1f;
     private float slamScale = 2.2f;
     private float slamDecaySpeed = 8f;
 
@@ -28,6 +32,16 @@ public class ComboMeter : MonoBehaviour
 
     void Update()
     {
+        // Drain combo points over time
+        if (currentComboPoints > 0)
+        {
+            // Check if enough time has passed since the last score increase
+            if (Time.time - lastScoreIncreaseTime >= scoreDrainDelay)
+            {
+                currentComboPoints = Mathf.Max(0, currentComboPoints - (scoreDrainRate * (Time.time - lastScoreIncreaseTime)));
+            }
+        }
+
         // Pulsate the rating letter
         if (comboRatingText != null)
         {
@@ -59,11 +73,13 @@ public class ComboMeter : MonoBehaviour
                 comboPointsText.transform.localScale = new Vector3(targetScale, targetScale, 1f);
             }
         }
+        UpdateUI();
     }
 
     public void AddComboPoint(int amount = 1)
     {
         currentComboPoints = Mathf.Clamp(currentComboPoints + amount, 0, maxComboPoints);
+        lastScoreIncreaseTime = Time.time; // Update the last score increase time
         UpdateUI(true);
     }
 
@@ -88,10 +104,10 @@ public class ComboMeter : MonoBehaviour
         // Update number
         if (comboPointsText != null)
         {
-            comboPointsText.text = currentComboPoints.ToString();
+            comboPointsText.text = Mathf.FloorToInt(currentComboPoints).ToString();
 
             // SLAM effect when number changes (from AddComboPoint)
-            if (slamNumber && currentComboPoints != lastPoints)
+            if (slamNumber && Mathf.Abs(currentComboPoints - lastPoints) >= 5)
             {
                 comboPointsText.transform.localScale = new Vector3(slamScale, slamScale, 0.5f);
                 lastPoints = currentComboPoints;

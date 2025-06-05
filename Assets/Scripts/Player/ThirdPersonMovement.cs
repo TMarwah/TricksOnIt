@@ -48,7 +48,7 @@ public class ThirdPersonMovement : MonoBehaviour
     private float flipKeyHoldTimer = 0f;
 
     [Tooltip("Amount of combo points gained per 360-degree rotation.")]
-    public int pointsPerFullRotation = 10;
+    public float pointsPerDegree = 10/360f;
     [Tooltip("Maximum angle deviation from upright (in degrees) to successfully land a flip.")]
     [Range(0f, 90f)] public float maxLandingAngleDeviation = 45f;
     [Tooltip("Duration of stumble/stun animation on failed flip landing.")]
@@ -356,7 +356,7 @@ public class ThirdPersonMovement : MonoBehaviour
                     float rotationPerFrame = airFlipSpeed * currentSpeedMultiplier * Time.deltaTime;
                     transform.Rotate(_currentFlipAxis * rotationPerFrame, Space.Self);
                     _accumulatedFlipAngle += rotationPerFrame;
-                    potentialMidAirPoints = Mathf.FloorToInt(_accumulatedFlipAngle / 360f) * pointsPerFullRotation;
+                    potentialMidAirPoints = Mathf.FloorToInt(_accumulatedFlipAngle * pointsPerDegree);
                 }
             }
         }
@@ -396,7 +396,7 @@ public class ThirdPersonMovement : MonoBehaviour
              Debug.Log("Negligible rotation, no flip evaluated.");
              return;
         }
-        int pointsGained = Mathf.FloorToInt(_accumulatedFlipAngle / 360f) * pointsPerFullRotation;
+        int pointsGained = potentialMidAirPoints;
 
         if (isPitchOrRollFlip)
         {
@@ -445,7 +445,7 @@ public class ThirdPersonMovement : MonoBehaviour
         "Steady now...",
         "My ankles!",
         "Not again!",
-        "That was a close one!",
+        "Close one!",
         "Woah there!",
         "Oof!",
         "Eep!"

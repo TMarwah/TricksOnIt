@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8763516684770596977}
   - component: {fileID: 4721867367232416220}
   - component: {fileID: 8305554924307869065}
+  - component: {fileID: 2197151139938414523}
   - component: {fileID: 5868085564582267369}
   - component: {fileID: 5153124053551047932}
   m_Layer: 6
@@ -84,6 +85,7 @@ MonoBehaviour:
   airControlFactor: 0.5
   boostedAirControlFactor: 1.2
   turnSmoothTime: 0.1
+  groundDeceleration: 5
   jumpHeight: 3.5
   gravity: -15
   groundCheck: {fileID: 6823492796961156945}
@@ -98,12 +100,59 @@ MonoBehaviour:
     m_Bits: 8
   wallJumpVerticalBoost: 7
   wallJumpHorizontalBoost: 6
-  airFlipSpeed: 800
+  airFlipSpeed: 600
+  flipSpeedProfile:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1.5
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.25
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 0.8
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0.75
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  pointsPerDegree: 0.027777778
+  maxLandingAngleDeviation: 60
+  stumbleDuration: 0.5
+  minTrickHeight: 2
   isAiming: 0
   aimSpeedMultiplier: 0.4
   dashForce: 15
   dashDuration: 0.2
   wallJumpVFXPrefab: {fileID: 0}
+  bankedPointsText: {fileID: 0}
   isGrounded: 0
   isSprinting: 0
 --- !u!114 &8763516684770596977
@@ -132,6 +181,12 @@ MonoBehaviour:
   plungingAttackForce: 20
   hitSparkPrefab: {fileID: 3500883190020426963, guid: 9e15fafdf3d8784419547a150bdfc53a, type: 3}
   plungeAttackVFXPrefab: {fileID: 0}
+  pelletShootSound: {fileID: 8300000, guid: b95c44bc3a2e89f4b9faa942b7c17cb5, type: 3}
+  pelletShootVolume: 0.8
+  hitSound: {fileID: 8300000, guid: 226934ea0f1720a4399520cdd9c4d337, type: 3}
+  hitVolume: 0.7
+  plungeImpactSound: {fileID: 0}
+  plungeImpactVolume: 1
 --- !u!114 &4721867367232416220
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -146,6 +201,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxHealth: 100
   _currentHealth: 0
+  invulnerabilityDuration: 1
   healthDrainRate: 0
 --- !u!114 &8305554924307869065
 MonoBehaviour:
@@ -163,6 +219,25 @@ MonoBehaviour:
   sprintFOV: 70
   aimFOV: 40
   fovLerpSpeed: 5
+--- !u!114 &2197151139938414523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2127766537862334118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0315e5bc06d5aae44b725c851d20c6b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxComboPoints: 100
+  pointsPerTrick: 10
+  currentComboPoints: 30
+  scoreDrainRate: 0.01
+  scoreDrainDelay: 2
+  comboPointsText: {fileID: 0}
+  comboRatingText: {fileID: 0}
 --- !u!95 &5868085564582267369
 Animator:
   serializedVersion: 7
@@ -270,8 +345,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6206635290685086257}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.09385862, y: -0.898557, z: 0.23537798, w: -0.35830593}
-  m_LocalPosition: {x: -2.7524045, y: 2.25, z: 2.90246}
+  m_LocalRotation: {x: 0.25340116, y: -0.00000019612527, z: 0.000000041448292, w: 0.96736133}
+  m_LocalPosition: {x: 0, y: 2.25, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
