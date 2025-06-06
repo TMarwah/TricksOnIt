@@ -143,15 +143,17 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  pointsPerDegree: 0.027777778
+  pointsPerDegree: 0.2777778
   maxLandingAngleDeviation: 60
   stumbleDuration: 0.5
   minTrickHeight: 2
   isAiming: 0
   aimSpeedMultiplier: 0.4
-  dashForce: 15
+  dashForce: 50
   dashDuration: 0.2
-  wallJumpVFXPrefab: {fileID: 0}
+  isDashing: 0
+  wallJumpVFXPrefab: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55, type: 3}
+  dashVFXPrefab: {fileID: 9027514048236820045, guid: effb650189dc5714e9e9801b1cfb3991, type: 3}
   bankedPointsText: {fileID: 0}
   isGrounded: 0
   isSprinting: 0
@@ -179,8 +181,8 @@ MonoBehaviour:
   handCooldown: 0.5
   didPlungeAttack: 0
   plungingAttackForce: 20
-  hitSparkPrefab: {fileID: 3500883190020426963, guid: 9e15fafdf3d8784419547a150bdfc53a, type: 3}
-  plungeAttackVFXPrefab: {fileID: 0}
+  hitSparkPrefab: {fileID: 5880797563127281583, guid: 265d3a5ba69981a4698ceabcedf368b0, type: 3}
+  plungeAttackVFXPrefab: {fileID: 3432958286849152088, guid: 87ee7299dd44ed747af24dbb91bcd33b, type: 3}
   pelletShootSound: {fileID: 8300000, guid: b95c44bc3a2e89f4b9faa942b7c17cb5, type: 3}
   pelletShootVolume: 0.8
   hitSound: {fileID: 8300000, guid: 226934ea0f1720a4399520cdd9c4d337, type: 3}
@@ -200,9 +202,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxHealth: 100
-  _currentHealth: 0
   invulnerabilityDuration: 1
   healthDrainRate: 0
+  globalVolume: {fileID: 0}
+  flashInterval: 0.1
+  flashAlpha: 0.3
+  _currentHealth: 0
 --- !u!114 &8305554924307869065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,6 +222,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   normalFOV: 60
   sprintFOV: 70
+  dashFOV: 90
   aimFOV: 40
   fovLerpSpeed: 5
 --- !u!114 &2197151139938414523
@@ -231,11 +237,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0315e5bc06d5aae44b725c851d20c6b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxComboPoints: 100
-  pointsPerTrick: 10
-  currentComboPoints: 30
+  maxComboPoints: 1000
+  pointsPerTrick: 100
+  currentComboPoints: 500
   scoreDrainRate: 0.01
-  scoreDrainDelay: 2
+  scoreDrainDelay: 5
   comboPointsText: {fileID: 0}
   comboRatingText: {fileID: 0}
 --- !u!95 &5868085564582267369

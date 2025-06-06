@@ -48,21 +48,21 @@ public class GameUIHandler : MonoBehaviour
             return;
         }
 
-        if (GameState.Instance == null)
+        if (GameManager.Instance == null)
         {
-            Debug.LogError("GameUIHandler: GameState instance not found! Make sure a GameState GameObject exists in your scene.", this);
+            Debug.LogError("GameUIHandler: GameManager instance not found! Make sure a GameManager GameObject exists in your scene.", this);
             enabled = false;
             return;
         }
 
-        // Subscribe to GameState events
-        GameState.Instance.OnEnemiesRemainingChanged += UpdateEnemiesText;
-        GameState.Instance.OnBossAboutToSpawn += ShowBossWarning;
+        // Subscribe to GameManager events
+        GameManager.Instance.OnEnemiesRemainingChanged += UpdateEnemiesText;
+        GameManager.Instance.OnBossAboutToSpawn += ShowBossWarning;
 
         // Set initial enemy count text
-        if (!GameState.Instance.IsBossAboutToSpawn)
+        if (!GameManager.Instance.IsBossAboutToSpawn)
         {
-            UpdateEnemiesText(GameState.Instance.CurrentEnemiesRemaining);
+            UpdateEnemiesText(GameManager.Instance.CurrentEnemiesRemaining);
         }
     }
 
@@ -74,10 +74,10 @@ public class GameUIHandler : MonoBehaviour
             PlayerHealth.OnHealthChange -= HealthChanged;
         }
 
-        if (GameState.Instance != null)
+        if (GameManager.Instance != null)
         {
-            GameState.Instance.OnEnemiesRemainingChanged -= UpdateEnemiesText;
-            GameState.Instance.OnBossAboutToSpawn -= ShowBossWarning;
+            GameManager.Instance.OnEnemiesRemainingChanged -= UpdateEnemiesText;
+            GameManager.Instance.OnBossAboutToSpawn -= ShowBossWarning;
         }
     }
 
@@ -108,7 +108,7 @@ public class GameUIHandler : MonoBehaviour
     /// <param name="count">The new count of enemies remaining.</param>
     private void UpdateEnemiesText(int count)
     {
-        if (!GameState.Instance.IsBossAboutToSpawn && enemiesOrBossText != null)
+        if (!GameManager.Instance.IsBossAboutToSpawn && enemiesOrBossText != null)
         {
             enemiesOrBossText.text = $"Enemies Remaining: {count}";
             enemiesOrBossText.alignment = TextAlignmentOptions.Center;
@@ -147,7 +147,7 @@ public class GameUIHandler : MonoBehaviour
         // Start from the right edge
         rectTransform.anchoredPosition = new Vector2(parentWidth, rectTransform.anchoredPosition.y);
 
-        while (GameState.Instance != null && GameState.Instance.IsBossAboutToSpawn)
+        while (GameManager.Instance != null && GameManager.Instance.IsBossAboutToSpawn)
         {
             float newX = rectTransform.anchoredPosition.x - scrollSpeed * Time.deltaTime;
 

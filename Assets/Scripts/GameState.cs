@@ -1,87 +1,66 @@
 using System;
 using UnityEngine;
-using System.Collections.Generic;
+using System.Collections.Generic; // Only needed if you switch to a List
 
 /// <summary>
-/// GameState script to manage global game progress, including current level index and enemy counts.
-/// This is a Singleton, so it will persist across scenes if marked DontDestroyOnLoad.
+/// A centralized manager for game state, level progression, and debug controls.
+/// This script combines the functionality of GameState, LevelManager, and LevelDebug.
+/// It acts as a Singleton.
 /// </summary>
-public class GameState : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
-    // Singleton instance
-    public static GameState Instance { get; private set; }
+    // --- Singleton Instance ---
+    public static GameManager Instance { get; private set; }
 
-    // Event to notify listeners (like UI) when the enemy count changes
+    // --- Events for External Scripts (like UI) ---
     public event Action<int> OnEnemiesRemainingChanged;
-    // Event to notify when the boss is about to spawn
     public event Action OnBossAboutToSpawn;
-    // NEW: Event to notify when the current level index changes
-    public event Action<int> OnLevelIndexChanged;
-    public AudioClip alarmSfx;
 
-    private int _currentEnemiesRemaining;
+    // --- Inspector References ---
+    [Header("Core References")]
+    [Tooltip("Drag the Player GameObject here.")]
     public GameObject player;
+    [SerializeField]
+    [Tooltip("UI Text element to display the timer.")]
+    private TMPro.TextMeshProUGUI timerText;
+    [SerializeField]
+    [Tooltip("Sound effect for the boss spawn warning.")]
+    private AudioClip alarmSfx;
 
-    public int CurrentEnemiesRemaining
+    [Header("Level Configuration")]
+    [Tooltip("Define the settings for each level in order. The array index is the Level Index.")]
+    public LevelData[] levels;
+
+    // --- Public Properties (Read-only from outside) ---
+    public int CurrentLevelIndex { get; private set; } = -1; // Start at -1 to ensure clean load of level 0
+    public int CurrentEnemiesRemaining { get; private set; }
+    public float Timer { get; private set; }
+    public bool IsBossAboutToSpawn { get; private set; }
+
+    // --- Private State ---
+    private bool bossHasBeenSpawnedForCurrentLevel = false;
+
+    /// <summary>
+    /// Holds all configuration data for a single level.
+    /// </summary>
+    [System.Serializable]
+    public class LevelData
     {
-        get { return _currentEnemiesRemaining; }
-        private set
-        {
-            if (_currentEnemiesRemaining != value)
-            {
-                _currentEnemiesRemaining = value;
-                OnEnemiesRemainingChanged?.Invoke(_currentEnemiesRemaining);
-            }
-        }
+        [Tooltip("Just for clarity in the Inspector.")]
+        public string levelName;
+        [Tooltip("The spawn point for the player in this level.")]
+        public Transform playerSpawnPoint;
+        [Tooltip("The spawner responsible for creating enemies in this level.")]
+        public EnemySpawner enemySpawner;
+        [Tooltip("The transform where the boss for this level will be spawned.")]
+        public Transform bossSpawnPoint;
+        [Tooltip("Total number of regular enemies to defeat in this level.")]
+        public int totalEnemies;
+        [Tooltip("The number of remaining enemies at which the boss will spawn.")]
+        public int bossSpawnThreshold;
     }
 
-    [SerializeField] private TMPro.TextMeshProUGUI timerText;
-    private float _timer;
-    public float Timer
-    {
-        get { return _timer; }
-        private set
-        {
-            if (_timer != value)
-            {
-                _timer = value;
-            }
-        }
-    }
-
-    private bool _isBossAboutToSpawn = false;
-    public bool IsBossAboutToSpawn
-    {
-        get { return _isBossAboutToSpawn; }
-        private set
-        {
-            if (_isBossAboutToSpawn != value)
-            {
-                _isBossAboutToSpawn = value;
-                if (_isBossAboutToSpawn)
-                {
-                    OnBossAboutToSpawn?.Invoke();
-                }
-            }
-        }
-    }
-
-    // NEW: Property to hold and update the current level index
-    // Initialize to 0 so a LevelManager for level 0 can activate immediately.
-    private int _currentLevelIndex = 0;
-    public int CurrentLevelIndex
-    {
-        get { return _currentLevelIndex; }
-        private set
-        {
-            if (_currentLevelIndex != value)
-            {
-                _currentLevelIndex = value;
-                Debug.Log($"GameState: Current Level Index changed to {_currentLevelIndex}");
-                OnLevelIndexChanged?.Invoke(_currentLevelIndex); // Notify listeners
-            }
-        }
-    }
+    #region Unity Lifecycle Methods
 
     void Awake()
     {
@@ -89,8 +68,7 @@ public class GameState : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // You might want to uncomment this if GameState should persist across scene loads
-            // DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject); // Uncomment if this manager should persist across scene loads
         }
         else
         {
@@ -98,76 +76,219 @@ public class GameState : MonoBehaviour
         }
     }
 
+    void Start()
+    {
+        // Validate core references
+        if (player == null)
+        {
+            Debug.LogError("GameManager: Player GameObject is not assigned!", this);
+            enabled = false;
+            return;
+        }
+        if (levels == null || levels.Length == 0)
+        {
+            Debug.LogError("GameManager: No Levels have been configured in the 'Levels' array!", this);
+            enabled = false;
+            return;
+        }
+
+        // Start the game at the first level
+        ChangeLevel(0);
+    }
+
     void Update()
     {
         Timer += Time.deltaTime;
-        // Reference a TMPro element to display the timer
         if (timerText != null)
         {
             timerText.text = $"{Timer:F2}";
         }
+
+        HandleDebugInput();
+        RunCurrentLevelLogic();
     }
 
-    // NEW: Method to set the current level, usually called by LevelDebug or level transitions
-    public void SetCurrentLevel(int levelIndex)
+    #endregion
+
+    #region Public Methods (Called by other scripts)
+
+    /// <summary>
+    /// Call this from an enemy's health/death script when it is defeated.
+    /// </summary>
+    public void DecrementEnemiesRemaining()
     {
-        CurrentLevelIndex = levelIndex;
-        // When a new level is set, you might want to reset other level-specific state
+        if (CurrentEnemiesRemaining > 0)
+        {
+            CurrentEnemiesRemaining--;
+            OnEnemiesRemainingChanged?.Invoke(CurrentEnemiesRemaining);
+        }
+    }
+
+    /// <summary>
+    /// Call this from a boss's health/death script when it is defeated.
+    /// This is the sole trigger for advancing to the next level.
+    /// </summary>
+    public void NotifyBossDefeated()
+    {
+        Debug.Log($"GameManager: Boss defeated on level {CurrentLevelIndex}. Advancing to next level.");
+        ChangeLevel(CurrentLevelIndex + 1);
+    }
+
+    #endregion
+
+    #region Core Game Logic
+
+    /// <summary>
+    /// This is the main game loop check that runs every frame.
+    /// </summary>
+    private void RunCurrentLevelLogic()
+    {
+        // Do nothing if the current level is invalid or has no data
+        if (CurrentLevelIndex < 0 || CurrentLevelIndex >= levels.Length) return;
+
+        LevelData currentLevelData = levels[CurrentLevelIndex];
+
+        // Check if the boss needs to be spawned for the current level
+        if (!bossHasBeenSpawnedForCurrentLevel &&
+            CurrentEnemiesRemaining <= currentLevelData.bossSpawnThreshold &&
+            currentLevelData.enemySpawner.HasCompletedAllWaves())
+        {
+            SpawnBossForCurrentLevel();
+        }
+    }
+
+    /// <summary>
+    /// Handles all logic for transitioning to a new level.
+    /// This is now the single, robust method for level changes.
+    /// </summary>
+    /// <param name="newIndex">The index of the level to load.</param>
+    private void ChangeLevel(int newIndex)
+    {
+        // --- 1. Validate the new level index ---
+        if (newIndex >= levels.Length)
+        {
+            Debug.LogWarning($"GameManager: Tried to change to level {newIndex}, but it is the final level or out of bounds. Game complete?");
+            // Optionally, handle game completion logic here (e.g., show credits screen)
+            return;
+        }
+        if (newIndex < 0)
+        {
+            Debug.LogError($"GameManager: Tried to change to an invalid negative level index: {newIndex}");
+            return;
+        }
+
+        Debug.LogWarning($"--- CHANGING TO LEVEL {newIndex} ---");
+
+        // --- 2. Deactivate previous level's spawner (if any) ---
+        if (CurrentLevelIndex >= 0 && CurrentLevelIndex < levels.Length)
+        {
+            levels[CurrentLevelIndex].enemySpawner?.StopAllCoroutines();
+        }
+        
+        // --- 3. Update State for the New Level ---
+        CurrentLevelIndex = newIndex;
+        LevelData currentLevelData = levels[CurrentLevelIndex];
+        bossHasBeenSpawnedForCurrentLevel = false;
         IsBossAboutToSpawn = false;
-        // Enemy count will be set by the active LevelManager itself when it initializes.
+        Timer = 0f;
+
+        // --- 4. Update GameState Properties and Notify Listeners ---
+        CurrentEnemiesRemaining = currentLevelData.totalEnemies;
+        OnEnemiesRemainingChanged?.Invoke(CurrentEnemiesRemaining); // Notify UI of new total
+
+        // --- 5. Teleport the Player ---
+        TeleportPlayerToSpawnPoint(currentLevelData.playerSpawnPoint);
+        
+        // Restore Player Health
         PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
         if (playerHealth != null)
         {
             playerHealth.RestoreHealthToFull();
         }
-        Timer = 0;
-    }
 
-    /// <summary>
-    /// Call this from the active LevelManager to set the total enemies for the current level.
-    /// </summary>
-    /// <param name="total">Total enemies in the current level.</param>
-    public void SetTotalEnemiesForLevel(int total)
-    {
-        CurrentEnemiesRemaining = total;
-        IsBossAboutToSpawn = false; // Reset boss flag for new level
-    }
-
-    /// <summary>
-    /// Call this from EnemyHealth when an enemy is defeated.
-    /// </summary>
-    public void DecrementEnemiesRemaining()
-    {
-        CurrentEnemiesRemaining--;
-    }
-
-    /// <summary>
-    /// Call this when the boss is defeated to signal level completion and advance to the next level.
-    /// </summary>
-    public void NotifyBossDefeatedAndAdvanceLevel()
-    {
-        Debug.Log("GameState: Boss defeated! Advancing to next level.");
-        LevelDebug levelDebug = GetComponent<LevelDebug>();
-        if (levelDebug != null)
+        // --- 6. Start the New Level's Spawner ---
+        if (currentLevelData.enemySpawner != null)
         {
-            int targetLevel = CurrentLevelIndex + 1;
-            Debug.Log($"GameState: Attempting to teleport to level index: {targetLevel} (from current: {CurrentLevelIndex})");
-            levelDebug.TeleportPlayer(targetLevel);
+            Debug.Log($"GameManager: Starting spawner for level {CurrentLevelIndex} with {currentLevelData.totalEnemies} enemies.");
+            currentLevelData.enemySpawner.StartSpawningWaves(currentLevelData.totalEnemies);
         }
-        // Optionally, you can trigger additional events or logic here for level completion.
+        else
+        {
+            Debug.LogError($"GameManager: Enemy Spawner for level {CurrentLevelIndex} is not assigned!", this);
+        }
     }
 
     /// <summary>
-    /// Call this from the active LevelManager when the boss spawn condition is met.
+    /// Spawns the boss for the currently active level.
     /// </summary>
-    public void NotifyBossAboutToSpawn()
+    private void SpawnBossForCurrentLevel()
     {
+        Debug.Log($"GameManager: Spawning boss for level {CurrentLevelIndex}.");
+
+        // Set state flags
+        bossHasBeenSpawnedForCurrentLevel = true;
+        IsBossAboutToSpawn = true;
+        
+        // Play sound and invoke event for UI/other effects
         if (alarmSfx != null)
         {
             AudioSource.PlayClipAtPoint(alarmSfx, Camera.main != null ? Camera.main.transform.position : Vector3.zero);
         }
-        IsBossAboutToSpawn = true;
+        OnBossAboutToSpawn?.Invoke();
+
+        // Get the current level's data and spawn the boss
+        LevelData currentLevelData = levels[CurrentLevelIndex];
+        if (currentLevelData.enemySpawner != null && currentLevelData.bossSpawnPoint != null)
+        {
+            currentLevelData.enemySpawner.SpawnBoss(currentLevelData.bossSpawnPoint.position);
+        }
+        else
+        {
+            Debug.LogError($"GameManager: Cannot spawn boss for level {CurrentLevelIndex}. Spawner or BossSpawnPoint is not assigned.", this);
+        }
     }
 
-    // You can add more global game state variables here (e.g., player score, game over state)
+    #endregion
+
+    #region Debug & Teleport Logic
+
+    /// <summary>
+    /// Handles keyboard input for debug teleporting.
+    /// </summary>
+    private void HandleDebugInput()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1)) ChangeLevel(0);
+        else if (Input.GetKeyDown(KeyCode.Alpha2)) ChangeLevel(1);
+        else if (Input.GetKeyDown(KeyCode.Alpha3)) ChangeLevel(2);
+        else if (Input.GetKeyDown(KeyCode.Alpha4)) ChangeLevel(3);
+        // Add more keys for more levels if needed
+    }
+
+    /// <summary>
+    /// Safely moves the player to a specified spawn point.
+    /// </summary>
+    private void TeleportPlayerToSpawnPoint(Transform spawnPoint)
+    {
+        if (player == null || spawnPoint == null)
+        {
+            Debug.LogWarning("GameManager: Cannot teleport player. Player or SpawnPoint is not assigned.");
+            return;
+        }
+
+        var characterController = player.GetComponent<CharacterController>();
+        if (characterController != null)
+        {
+            characterController.enabled = false;
+            player.transform.position = spawnPoint.position;
+            player.transform.rotation = spawnPoint.rotation;
+            characterController.enabled = true;
+        } else { // Fallback for objects without a character controller
+            player.transform.position = spawnPoint.position;
+            player.transform.rotation = spawnPoint.rotation;
+        }
+
+        Debug.Log($"GameManager: Player teleported to '{spawnPoint.name}'.");
+    }
+
+    #endregion
 }

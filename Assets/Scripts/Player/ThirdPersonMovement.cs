@@ -48,7 +48,7 @@ public class ThirdPersonMovement : MonoBehaviour
     private float flipKeyHoldTimer = 0f;
 
     [Tooltip("Amount of combo points gained per 360-degree rotation.")]
-    public float pointsPerDegree = 10/360f;
+    public float pointsPerDegree = 100/360f;
     [Tooltip("Maximum angle deviation from upright (in degrees) to successfully land a flip.")]
     [Range(0f, 90f)] public float maxLandingAngleDeviation = 45f;
     [Tooltip("Duration of stumble/stun animation on failed flip landing.")]
@@ -62,11 +62,13 @@ public class ThirdPersonMovement : MonoBehaviour
     public float aimSpeedMultiplier = 0.4f;
 
     [Header("Dashing")]
-    public float dashForce = 15f;
+    public float dashForce = 50f;
     public float dashDuration = 0.25f;
-    private bool isDashing = false;
+    public bool isDashing = false;
 
     public GameObject wallJumpVFXPrefab;
+    public GameObject dashVFXPrefab;
+    public AudioClip dashSFX;
 
     [Header("UI")]
     public TextMeshProUGUI bankedPointsText;
@@ -129,7 +131,7 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
         airControlMultiplier = airControlFactor;
-        comboMeter = FindObjectOfType<ComboMeter>();
+        comboMeter = GetComponent<ComboMeter>();
         if (comboMeter == null)
         {
             Debug.LogWarning("ThirdPersonMovement: ComboMeter not found. Points will not be awarded.", this);
@@ -441,11 +443,9 @@ public class ThirdPersonMovement : MonoBehaviour
         "Oops!",
         "Wobbly!",
         "Gah!",
-        "Tripped!",
         "Steady now...",
         "My ankles!",
         "Not again!",
-        "Close one!",
         "Woah there!",
         "Oof!",
         "Eep!"
@@ -538,11 +538,21 @@ public class ThirdPersonMovement : MonoBehaviour
     {
         Vector3 dashDirection = model.forward;
         isDashing = true;
-        if(animator) animator.SetBool("isDashing", true);
+        if (animator) animator.SetBool("isDashing", true);
         float timer = 0f;
         velocity.y = 0;
 
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
+
+        // Instantiate the VFX prefab behind the player
+        GameObject dashVFX = Instantiate(dashVFXPrefab, transform.position, Quaternion.identity);
+        dashVFX.transform.SetParent(transform);
+        dashVFX.transform.localPosition = Vector3.zero;
+
+        if (dashSFX != null)
+        {
+            AudioSource.PlayClipAtPoint(dashVFXPrefab.GetComponent<AudioSource>().clip, transform.position);
+        }
 
         while (timer < dashDuration)
         {
@@ -550,11 +560,14 @@ public class ThirdPersonMovement : MonoBehaviour
             timer += Time.deltaTime;
             yield return null;
         }
-        
+
         yield return StartCoroutine(WaitUntilNotInsideEnemy());
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
         isDashing = false;
-        if(animator) animator.SetBool("isDashing", false);
+        if (animator) animator.SetBool("isDashing", false);
+
+        // Destroy the VFX after the dash ends
+        Destroy(dashVFX, 1f);
     }
 
     private IEnumerator WaitUntilNotInsideEnemy()

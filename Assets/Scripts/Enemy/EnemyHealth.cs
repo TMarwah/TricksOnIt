@@ -53,13 +53,13 @@ public class EnemyHealth : MonoBehaviour
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
         // Notify LevelManager if assigned, otherwise try to find it
-        if (GameState.Instance != null)
+        if (GameManager.Instance != null)
         {
-            GameState.Instance.DecrementEnemiesRemaining(); // Notify the GameState directly
+            GameManager.Instance.DecrementEnemiesRemaining(); // Notify the GameManager directly
         }
         else
         {
-            Debug.LogWarning($"Enemy '{gameObject.name}' died but GameState instance is null. Enemy count not decremented.", this);
+            Debug.LogWarning($"Enemy '{gameObject.name}' died but GameManager instance is null. Enemy count not decremented.", this);
         }
 
         Destroy(gameObject, 2f); // give time for death animation to play

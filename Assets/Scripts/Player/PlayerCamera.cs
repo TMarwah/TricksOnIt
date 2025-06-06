@@ -8,6 +8,7 @@ public class PlayerCamera : MonoBehaviour
     private Unity.Cinemachine.CinemachineCamera virtualCamera;
     public float normalFOV = 40f;
     public float sprintFOV = 50f;
+    public float dashFOV = 60;
     public float aimFOV = 20f;
     public float fovLerpSpeed = 5f;
     private float currentFOV;
@@ -43,6 +44,10 @@ public class PlayerCamera : MonoBehaviour
         else if (player.isSprinting)
         {
             targetFOV = sprintFOV;
+        }
+        else if (player.isDashing)
+        {
+            targetFOV = dashFOV;
         }
 
         currentFOV = Mathf.Lerp(currentFOV, targetFOV, Time.deltaTime * fovLerpSpeed);

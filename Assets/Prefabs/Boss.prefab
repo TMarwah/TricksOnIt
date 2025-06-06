@@ -93,7 +93,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
-  isBoss: 0
+  isBoss: 1
   attackRange: 4
   attackCooldown: 2
   attackDamage: 10

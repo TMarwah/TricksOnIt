@@ -45,7 +45,7 @@ public class EnemyChase : MonoBehaviour
         {
             if (isBoss)
             {
-                GameState.Instance.NotifyBossDefeatedAndAdvanceLevel();
+                GameManager.Instance.NotifyBossDefeated();
             }
             return;
         }

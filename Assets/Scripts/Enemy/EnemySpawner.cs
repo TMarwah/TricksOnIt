@@ -29,8 +29,8 @@ public class EnemySpawner : MonoBehaviour
     [Header("References")]
     [Tooltip("Drag your Player GameObject here, for enemies to target.")]
     public Transform player;
-    [Tooltip("Drag your LevelManager GameObject here.")]
-    private LevelManager levelManager;
+    // [Tooltip("Drag your LevelManager GameObject here.")]
+    // private LevelManager levelManager;
 
     private int _enemiesRemainingInLevel; // Total enemies to spawn for the current level
     private int _enemiesSpawnedInCurrentWave;
@@ -86,16 +86,16 @@ public class EnemySpawner : MonoBehaviour
         {
             Debug.LogError("EnemySpawner: Player Transform is not assigned! Enemies will not have a target.", this);
         }
-        if (levelManager == null)
-        {
-            levelManager = GetComponentInParent<LevelManager>();
-            if (levelManager == null)
-            {
-                Debug.LogError("EnemySpawner: LevelManager is not assigned and could not be found in parent!", this);
-                enabled = false;
-                return;
-            }
-        }
+        // if (levelManager == null)
+        // {
+        //     levelManager = GetComponentInParent<LevelManager>();
+        //     if (levelManager == null)
+        //     {
+        //         Debug.LogError("EnemySpawner: LevelManager is not assigned and could not be found in parent!", this);
+        //         enabled = false;
+        //         return;
+        //     }
+        // }
     }
 
     /// <summary>
