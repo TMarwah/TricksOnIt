@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e51b3694b363c074796cd5e6d9dc4345
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/FPS3DE_User_Setup_Guide.pdf
+  uploadId: 726447

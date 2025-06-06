@@ -97,18 +97,18 @@ public class PlayerAttack : MonoBehaviour
             shootComboTimer += Time.deltaTime;
             if (shootComboTimer >= 1f)
             {
-                int pointsToSpend = comboMeter != null ? comboMeter.pointsPerTrick : 1;
-                if (comboMeter != null && comboMeter.HasComboPoints(pointsToSpend))
-                {
-                    comboMeter.SpendComboPoint(pointsToSpend);
-                    StartCoroutine(PerformRangedAttack("Left"));
-                    leftCooldownTimer = handCooldown;
-                }
-                else
-                {
-                    BlurbText.Instance.TypeText("I can't do that right now!");
-                }
-                shootComboTimer = 0f;
+            int pointsToSpend = comboMeter != null ? comboMeter.pointsPerTrick / 10 : 1;
+            if (comboMeter != null && comboMeter.HasComboPoints(pointsToSpend))
+            {
+                comboMeter.SpendComboPoint(pointsToSpend);
+                StartCoroutine(PerformRangedAttack("Left"));
+                leftCooldownTimer = handCooldown;
+            }
+            else
+            {
+                BlurbText.Instance.TypeText("I can't do that right now!");
+            }
+            shootComboTimer = 0f;
             }
         }
         else
@@ -116,14 +116,50 @@ public class PlayerAttack : MonoBehaviour
             shootComboTimer = 0f;
         }
 
+        // --- SHOOTING: Holding E on ground spends 1 trick's worth of combo points per second ---
+        if (playerController.isGrounded && rightHeld)
+        {
+            shootComboTimer += Time.deltaTime;
+            if (shootComboTimer >= 1f)
+            {
+            int pointsToSpend = comboMeter != null ? comboMeter.pointsPerTrick / 10 : 1;
+            if (comboMeter != null && comboMeter.HasComboPoints(pointsToSpend))
+            {
+                comboMeter.SpendComboPoint(pointsToSpend);
+                StartCoroutine(PerformRangedAttack("Right"));
+                rightCooldownTimer = handCooldown;
+            }
+            else
+            {
+                BlurbText.Instance.TypeText("I can't do that right now!");
+            }
+            shootComboTimer = 0f;
+            }
+        }
+        else
+        {
+            shootComboTimer = 0f;
+        }
+
+        // Fire left hand shot if cooldown allows and key held
+        if (leftHeld && leftCooldownTimer <= 0f && playerController.isGrounded)
+        {
+            if (comboMeter != null && comboMeter.HasComboPoints())
+            {
+            comboMeter.SpendComboPoint();
+            StartCoroutine(PerformRangedAttack("Left"));
+            leftCooldownTimer = handCooldown;
+            }
+        }
+
         // Fire right hand shot if cooldown allows and key held
         if (rightHeld && rightCooldownTimer <= 0f && playerController.isGrounded)
         {
             if (comboMeter != null && comboMeter.HasComboPoints())
             {
-                comboMeter.SpendComboPoint();
-                StartCoroutine(PerformRangedAttack("Right"));
-                rightCooldownTimer = handCooldown;
+            comboMeter.SpendComboPoint();
+            StartCoroutine(PerformRangedAttack("Right"));
+            rightCooldownTimer = handCooldown;
             }
         }
 

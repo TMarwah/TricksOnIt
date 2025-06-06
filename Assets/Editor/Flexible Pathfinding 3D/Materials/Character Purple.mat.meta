@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 94114ac86b6630c47915b11e4ac469af
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Materials/Character Purple.mat
+  uploadId: 726447

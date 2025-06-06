@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b02f32bde356cc84fa07c70020a542c4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Materials/Floor.mat
+  uploadId: 726447

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e73353c7413e83249afd19fef20873a3
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Custom Formats/Debug Assets/CornerPrefab.prefab
+  uploadId: 726447

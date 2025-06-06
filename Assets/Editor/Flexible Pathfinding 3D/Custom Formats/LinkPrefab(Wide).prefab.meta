@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4b6aac82c2f4f984e931308c0c1e7ce7
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Custom Formats/LinkPrefab(Wide).prefab
+  uploadId: 726447
