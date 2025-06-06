@@ -24,7 +24,7 @@ public class ComboMeter : MonoBehaviour
     private float lastPoints = -1f;
     private float slamScale = 2.2f;
     private float slamDecaySpeed = 8f;
-    public AudioClip trickSuccessSFX;
+    public AudioClip scoreUpSFX;
 
     void Start()
     {
@@ -125,7 +125,7 @@ public class ComboMeter : MonoBehaviour
             // SLAM effect when the letter changes
             if (slamNumber && rating != lastRating)
             {
-                AudioSource.PlayClipAtPoint(trickSuccessSFX, transform.position);
+                AudioSource.PlayClipAtPoint(scoreUpSFX, transform.position);
                 comboRatingText.transform.localScale = new Vector3(slamScale, slamScale, 1f);
                 lastRating = rating;
             }

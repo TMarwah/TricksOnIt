@@ -20,13 +20,16 @@ public class GameManager : MonoBehaviour
     [Tooltip("Drag the Player GameObject here.")]
     public GameObject player;
 
-    [Header("UI References")] // NEW: Separated UI references
+    [Header("UI References")]
     [SerializeField]
     [Tooltip("UI Text element to display the timer.")]
     private TMPro.TextMeshProUGUI timerText;
-    [SerializeField] // NEW: Field for the main UI Canvas
+    [SerializeField]
     [Tooltip("Drag the main UI Canvas GameObject that holds all in-game UI.")]
-    private GameObject mainCanvasUI; // NEW: Reference to the main UI Canvas
+    private GameObject mainCanvasUI;
+    [SerializeField]
+    [Tooltip("Drag the End Game UI Canvas GameObject.")]
+    private GameObject endGameUI;
 
     [Header("Audio")]
     [SerializeField]
@@ -36,10 +39,10 @@ public class GameManager : MonoBehaviour
     private AudioClip winSFX;
     [SerializeField]
     [Tooltip("The AudioSource that plays the looping background music.")]
-    private AudioSource musicSource; // Reference to the music AudioSource
+    private AudioSource musicSource;
     [SerializeField]
     [Tooltip("The main background music clip that loops during levels.")]
-    private AudioClip backgroundMusicLoop; // The default music clip
+    private AudioClip backgroundMusicLoop;
 
     [Header("Level Configuration")]
     [Tooltip("Define the settings for each level in order. The array index is the Level Index.")]
@@ -55,11 +58,26 @@ public class GameManager : MonoBehaviour
     public float bossDefeatSlowMoFactor = 0.1f;
     [Tooltip("How long the slow-motion effect lasts (in real-world seconds) before advancing the level.")]
     public float bossDefeatSlowMoDuration = 3.0f;
-    [Tooltip("The color to tint the main directional light during the boss defeat slow-mo.")]
+    [Tooltip("The color to tint the directional lights during the boss defeat slow-mo.")]
     public Color bossDefeatLightColor = Color.red;
+    
+    // NEW: Settings for the dynamic UI pop-in
+    [Header("End Game UI Animation")]
+    [Tooltip("How long the pop-in animation for the End Game UI takes.")]
+    public float popInDuration = 0.5f;
+    [Tooltip("The animation curve for the pop-in effect. Creates a nice 'bounce' or 'overshoot'.")]
+    public AnimationCurve popInCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    [Header("Lighting References")] // NEW: Header for specific light references
+    [SerializeField]
+    [Tooltip("Drag the first directional light here.")]
+    private Light directionalLight1;
+    [SerializeField]
+    [Tooltip("Drag the second directional light here.")]
+    private Light directionalLight2;
 
 
-    // --- Public Properties (Read-only from outside) ---
+    // --- Public Properties ---
     public int CurrentLevelIndex { get; private set; } = -1;
     public int CurrentEnemiesRemaining { get; private set; }
     public float Timer { get; private set; }
@@ -68,8 +86,11 @@ public class GameManager : MonoBehaviour
     // --- Private State ---
     private bool bossHasBeenSpawnedForCurrentLevel = false;
     private bool isAdvancingLevel = false;
-    private Light mainDirectionalLight;
-    private Color originalLightColor;
+    // Reverted to individual light color storage
+    private Color originalLightColor1;
+    private Color originalLightColor2;
+    // NEW: Store original skybox tint color
+    private Color originalSkyboxTint;
 
     [System.Serializable]
     public class LevelData
@@ -89,7 +110,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject); // Uncomment if GameManager should persist across scene loads
         }
         else
         {
@@ -101,31 +121,39 @@ public class GameManager : MonoBehaviour
     {
         if (player == null || levels == null || levels.Length == 0)
         {
-            Debug.LogError("GameManager: Core references (Player, Levels) are not configured!", this);
+            Debug.LogError("GameManager: Core references are not configured!", this);
             enabled = false;
             return;
         }
-
-        // Validate music source
-        if (musicSource == null)
+        if (musicSource != null && backgroundMusicLoop != null)
         {
-            Debug.LogWarning("GameManager: Music AudioSource is not assigned. Background music will not play or be controlled.", this);
-        } else {
-            musicSource.loop = true; // Ensure the music source loops
-            // Initial play of background music, it will be controlled by ChangeLevel later
+            musicSource.loop = true;
             musicSource.clip = backgroundMusicLoop;
             musicSource.Play();
         }
-
-        // NEW: Validate Canvas UI reference
+        
         if (mainCanvasUI == null)
         {
             Debug.LogWarning("GameManager: Main Canvas UI reference is not assigned. UI visibility will not be controlled.", this);
         }
+        // Hide the end game UI at the start
+        if (endGameUI != null)
+        {
+            endGameUI.SetActive(false);
+        }
 
+        FindMainDirectionalLight(); // This method now explicitly checks the two assigned lights
+        // NEW: Store original skybox tint at start
+        if (RenderSettings.skybox != null)
+        {
+            originalSkyboxTint = RenderSettings.skybox.HasProperty("_Tint") ? RenderSettings.skybox.GetColor("_Tint") : Color.white;
+        }
+        else
+        {
+            Debug.LogWarning("GameManager: No Skybox material found in RenderSettings. Skybox tinting will not work.");
+        }
 
-        FindMainDirectionalLight();
-        ChangeLevel(0); // Start the first level
+        ChangeLevel(0);
     }
 
     void Update()
@@ -138,15 +166,10 @@ public class GameManager : MonoBehaviour
 
         HandleDebugInput();
 
-        // Don't run level logic if we are in the middle of a level transition
         if (!isAdvancingLevel)
         {
             RunCurrentLevelLogic();
         }
-        // else
-        // {
-        // Debug.Log("we are advancing rn"); // Uncomment for verbose debug if needed
-        // }
     }
 
     #endregion
@@ -179,29 +202,23 @@ public class GameManager : MonoBehaviour
     private void RunCurrentLevelLogic()
     {
         if (CurrentLevelIndex < 0 || CurrentLevelIndex >= levels.Length) return;
-
         LevelData currentLevelData = levels[CurrentLevelIndex];
 
         if (!bossHasBeenSpawnedForCurrentLevel &&
             CurrentEnemiesRemaining <= currentLevelData.bossSpawnThreshold &&
             currentLevelData.enemySpawner.HasCompletedAllWaves())
         {
-            bossHasBeenSpawnedForCurrentLevel = true;
+            bossHasBeenSpawnedForCurrentLevel = true; 
             StartCoroutine(BossSpawnSequenceCoroutine());
         }
     }
 
-    /// <summary>
-    /// This method now only sets up the level state.
-    /// It no longer releases the isAdvancingLevel lock. That is handled by a separate coroutine.
-    /// </summary>
     private void ChangeLevel(int newIndex)
     {
         if (newIndex >= levels.Length)
         {
-            Debug.LogWarning("GameManager: Reached final level. No further levels to load.");
-            // You might add a "Game Won" screen here
-            isAdvancingLevel = false; // Release lock if no more levels
+            Debug.LogWarning("GameManager: Reached final level.");
+            isAdvancingLevel = false;
             return;
         }
         if (newIndex < 0)
@@ -212,13 +229,11 @@ public class GameManager : MonoBehaviour
 
         Debug.LogWarning($"--- CHANGING TO LEVEL {newIndex} ---");
 
-        // Stop previous level's spawner if active
-        if (CurrentLevelIndex >= 0 && CurrentLevelIndex < levels.Length && levels[CurrentLevelIndex].enemySpawner != null)
+        if (CurrentLevelIndex >= 0 && CurrentLevelIndex < levels.Length)
         {
-            levels[CurrentLevelIndex].enemySpawner.StopAllCoroutines();
-            // Optionally clear existing enemies from previous level here if they should despawn
+            levels[CurrentLevelIndex].enemySpawner?.StopAllCoroutines();
         }
-
+        
         CurrentLevelIndex = newIndex;
         LevelData currentLevelData = levels[CurrentLevelIndex];
         bossHasBeenSpawnedForCurrentLevel = false;
@@ -226,40 +241,26 @@ public class GameManager : MonoBehaviour
         Timer = 0f;
 
         CurrentEnemiesRemaining = currentLevelData.totalEnemies;
-        OnEnemiesRemainingChanged?.Invoke(CurrentEnemiesRemaining); // Update UI immediately
+        OnEnemiesRemainingChanged?.Invoke(CurrentEnemiesRemaining);
 
         TeleportPlayerToSpawnPoint(currentLevelData.playerSpawnPoint);
         
-        // Ensure PlayerHealth has a RestoreHealthToFull method
         player.GetComponent<PlayerHealth>()?.RestoreHealthToFull();
 
         if (currentLevelData.enemySpawner != null)
         {
-            Debug.Log($"GameManager: Starting spawner for level {CurrentLevelIndex} with {currentLevelData.totalEnemies} enemies.");
             currentLevelData.enemySpawner.StartSpawningWaves(currentLevelData.totalEnemies);
         }
-        else
-        {
-            Debug.LogError($"GameManager: Enemy Spawner for level {CurrentLevelIndex} is not assigned!", this);
-        }
-
-        // Restart background music for the new level
+        
         if (musicSource != null && backgroundMusicLoop != null)
         {
-            musicSource.clip = backgroundMusicLoop; // Ensure the correct clip is set
+            musicSource.clip = backgroundMusicLoop;
             musicSource.Play();
-            Debug.Log("GameManager: Background music restarted for new level.");
         }
         
-        // NEW: Re-enable the main UI Canvas when a new level starts
-        if (mainCanvasUI != null)
-        {
-            mainCanvasUI.SetActive(true);
-            Debug.Log("GameManager: Main UI Canvas re-enabled.");
-        }
+        if (mainCanvasUI != null) mainCanvasUI.SetActive(true);
+        if (endGameUI != null) endGameUI.SetActive(false);
 
-        // We start a coroutine to release the lock after a frame has passed.
-        // This gives the new level time to settle and prevents an instant re-trigger.
         StartCoroutine(ReleaseLevelAdvancementLock());
     }
 
@@ -268,58 +269,45 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager: Boss spawn sequence started.");
         
         IsBossAboutToSpawn = true;
-        OnBossAboutToSpawn?.Invoke(); // Notify UI
-        if (alarmSfx != null)
+        OnBossAboutToSpawn?.Invoke();
+        if (alarmSfx != null && musicSource != null)
         {
             musicSource.PlayOneShot(alarmSfx);
         }
 
-        yield return new WaitForSeconds(bossSpawnDelay); // Wait for the pre-spawn delay
+        yield return new WaitForSeconds(bossSpawnDelay);
 
         Debug.Log("GameManager: Delay finished. Spawning boss.");
         LevelData currentLevelData = levels[CurrentLevelIndex];
-        if (currentLevelData.enemySpawner != null && currentLevelData.bossSpawnPoint != null)
-        {
-            currentLevelData.enemySpawner.SpawnBoss(currentLevelData.bossSpawnPoint.position);
-        }
-        else
-        {
-            Debug.LogError($"GameManager: Cannot spawn boss for level {CurrentLevelIndex}. Spawner or BossSpawnPoint is not assigned.", this);
-        }
+        currentLevelData.enemySpawner?.SpawnBoss(currentLevelData.bossSpawnPoint.position);
     }
 
     private IEnumerator BossDefeatSequenceCoroutine()
     {
-        isAdvancingLevel = true; // Lock level logic during transition
+        isAdvancingLevel = true;
         
         Debug.Log($"GameManager: Boss defeated! Starting slow-mo sequence.");
 
-        // NEW: Stop ALL current sounds on musicSource (including background music and any lingering one-shots like alarm)
-        if (musicSource != null && musicSource.isPlaying)
+        if (musicSource != null)
         {
             musicSource.Stop();
-            Debug.Log("GameManager: All sounds on musicSource stopped to play win SFX.");
+            if(winSFX != null) musicSource.PlayOneShot(winSFX);
         }
 
-        if (mainCanvasUI != null)
+        if (mainCanvasUI != null) mainCanvasUI.SetActive(false);
+        if (endGameUI != null)
         {
-            mainCanvasUI.SetActive(false);
-            Debug.Log("GameManager: Main UI Canvas disabled.");
+            StartCoroutine(AnimateEndGameUICoroutine());
         }
 
-        if (musicSource != null && winSFX != null) // Check if audioSource and winSFX are assigned
+        // Store original light colors for the two specific directional lights
+        if (directionalLight1 != null)
         {
-            musicSource.PlayOneShot(winSFX); // Play the win SFX
+            originalLightColor1 = directionalLight1.color;
         }
-        else
+        if (directionalLight2 != null)
         {
-            Debug.LogWarning("GameManager: Win SFX or MusicSource not assigned for BossDefeatSequence.", this);
-        }
-
-
-        if (mainDirectionalLight != null)
-        {
-            originalLightColor = mainDirectionalLight.color;
+            originalLightColor2 = directionalLight2.color;
         }
 
         try
@@ -330,45 +318,121 @@ public class GameManager : MonoBehaviour
                 // Smoothly interpolate time scale from 1.0 to bossDefeatSlowMoFactor
                 Time.timeScale = Mathf.Lerp(1.0f, bossDefeatSlowMoFactor, elapsedTime / bossDefeatSlowMoDuration);
                 
-                // Smoothly interpolate light color
-                if (mainDirectionalLight != null)
+                // Interpolate color for the two specific directional lights
+                if (directionalLight1 != null)
                 {
-                    mainDirectionalLight.color = Color.Lerp(originalLightColor, bossDefeatLightColor, elapsedTime / bossDefeatSlowMoDuration);
+                    directionalLight1.color = Color.Lerp(originalLightColor1, bossDefeatLightColor, elapsedTime / bossDefeatSlowMoDuration);
+                }
+                if (directionalLight2 != null)
+                {
+                    directionalLight2.color = Color.Lerp(originalLightColor2, bossDefeatLightColor, elapsedTime / bossDefeatSlowMoDuration);
                 }
 
-                elapsedTime += Time.unscaledDeltaTime; // Use unscaledDeltaTime for time-independent slow-mo
+                // NEW: Interpolate skybox tint color
+                if (RenderSettings.skybox != null && RenderSettings.skybox.HasProperty("_Tint"))
+                {
+                    RenderSettings.skybox.SetColor("_Tint", Color.Lerp(originalSkyboxTint, bossDefeatLightColor, elapsedTime / bossDefeatSlowMoDuration));
+                }
+                
+                elapsedTime += Time.unscaledDeltaTime;
                 yield return null;
             }
-            Time.timeScale = bossDefeatSlowMoFactor; // Ensure it snaps to final slow-mo factor
-            if (mainDirectionalLight != null)
+            Time.timeScale = bossDefeatSlowMoFactor;
+
+            // Ensure lights snap to final color
+            if (directionalLight1 != null)
             {
-                mainDirectionalLight.color = bossDefeatLightColor; // Ensure it snaps to final color
+                directionalLight1.color = bossDefeatLightColor;
             }
-            // Wait for the remaining duration *in real time*
-            // We wait for the *actual* duration of the slow-mo effect, not scaled by Time.timeScale
+            if (directionalLight2 != null)
+            {
+                directionalLight2.color = bossDefeatLightColor;
+            }
+            // NEW: Ensure skybox snaps to final color
+            if (RenderSettings.skybox != null && RenderSettings.skybox.HasProperty("_Tint"))
+            {
+                RenderSettings.skybox.SetColor("_Tint", bossDefeatLightColor);
+            }
+            
             yield return new WaitForSecondsRealtime(bossDefeatSlowMoDuration);
         }
-        finally // This block always executes, even if the coroutine is stopped or an error occurs
+        finally
         {
             Debug.Log("GameManager: Slow-mo finished. Restoring time and light.");
-            Time.timeScale = 1.0f; // Restore time scale to normal
-            if (mainDirectionalLight != null)
+            Time.timeScale = 1.0f;
+            // Restore original colors for the two specific directional lights
+            if (directionalLight1 != null)
             {
-                mainDirectionalLight.color = originalLightColor; // Restore original light color
+                directionalLight1.color = originalLightColor1;
+            }
+            if (directionalLight2 != null)
+            {
+                directionalLight2.color = originalLightColor2;
+            }
+            // NEW: Restore original skybox tint
+            if (RenderSettings.skybox != null && RenderSettings.skybox.HasProperty("_Tint"))
+            {
+                RenderSettings.skybox.SetColor("_Tint", originalSkyboxTint);
             }
         }
         
-        ChangeLevel(CurrentLevelIndex + 1); // Advance to the next level
+        ChangeLevel(CurrentLevelIndex + 1);
     }
     
     /// <summary>
-    /// This coroutine waits for a single frame before releasing the advancement lock.
-    /// This gives the new level time to settle and prevents an instant re-trigger.
+    /// Animates the children of the End Game UI by scaling them up and fading them in.
     /// </summary>
+    private IEnumerator AnimateEndGameUICoroutine()
+    {
+        CanvasGroup canvasGroup = endGameUI.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            Debug.LogError("GameManager: End Game UI is missing a CanvasGroup component! Animation will fail.", endGameUI);
+            endGameUI.SetActive(true);
+            yield break;
+        }
+
+        canvasGroup.alpha = 0;
+        endGameUI.SetActive(true);
+
+        List<RectTransform> childrenToAnimate = new List<RectTransform>();
+        foreach (Transform child in endGameUI.transform)
+        {
+            RectTransform rt = child.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                childrenToAnimate.Add(rt);
+                rt.localScale = Vector3.zero;
+            }
+        }
+
+        float elapsedTime = 0f;
+        while (elapsedTime < popInDuration)
+        {
+            elapsedTime += Time.unscaledDeltaTime; 
+            float progress = Mathf.Clamp01(elapsedTime / popInDuration);
+            float curveValue = popInCurve.Evaluate(progress);
+
+            canvasGroup.alpha = curveValue;
+            foreach (RectTransform child in childrenToAnimate)
+            {
+                child.localScale = Vector3.one * curveValue;
+            }
+
+            yield return null;
+        }
+
+        canvasGroup.alpha = 1f;
+        foreach (RectTransform child in childrenToAnimate)
+        {
+            child.localScale = Vector3.one;
+        }
+    }
+
     private IEnumerator ReleaseLevelAdvancementLock()
     {
-        yield return new WaitForEndOfFrame(); // Wait for the end of the current frame
-        isAdvancingLevel = false; // Release the lock
+        yield return new WaitForEndOfFrame();
+        isAdvancingLevel = false;
         Debug.Log("GameManager: Level advancement lock released.");
     }
 
@@ -382,43 +446,81 @@ public class GameManager : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Alpha2)) ChangeLevel(1);
         else if (Input.GetKeyDown(KeyCode.Alpha3)) ChangeLevel(2);
         else if (Input.GetKeyDown(KeyCode.Alpha4)) ChangeLevel(3);
-        // Add more debug keys if you have more levels
     }
 
+    /// <summary>
+    /// Finds and stores references to the two specific directional lights.
+    /// </summary>
     private void FindMainDirectionalLight()
     {
-        Light[] lights = FindObjectsOfType<Light>();
-        foreach (Light light in lights)
+        // If the lights are not assigned in the Inspector, try to find them by type.
+        // This is a fallback and assumes there are exactly two directional lights in the scene.
+        if (directionalLight1 == null || directionalLight2 == null)
         {
-            if (light.type == LightType.Directional)
+            Light[] lights = FindObjectsOfType<Light>();
+            List<Light> foundDirectionalLights = new List<Light>();
+            foreach (Light light in lights)
             {
-                mainDirectionalLight = light;
-                Debug.Log("GameManager: Found main directional light '" + light.gameObject.name + "'.");
-                originalLightColor = mainDirectionalLight.color; // Store original color
-                return;
+                if (light.type == LightType.Directional && light.gameObject.activeInHierarchy)
+                {
+                    foundDirectionalLights.Add(light);
+                }
+            }
+
+            if (foundDirectionalLights.Count >= 2)
+            {
+                if (directionalLight1 == null) directionalLight1 = foundDirectionalLights[0];
+                if (directionalLight2 == null) directionalLight2 = foundDirectionalLights[1];
+                Debug.Log("GameManager: Automatically assigned directional lights based on scene discovery.");
+            }
+            else if (foundDirectionalLights.Count == 1)
+            {
+                if (directionalLight1 == null) directionalLight1 = foundDirectionalLights[0];
+                Debug.LogWarning("GameManager: Only one directional light found. Ensure both directionalLight1 and directionalLight2 are assigned for full effect.");
+            }
+            else
+            {
+                Debug.LogWarning("GameManager: No directional lights found in scene. Boss defeat light effect will not work.");
             }
         }
-        Debug.LogWarning("GameManager: No directional light found in scene. Boss defeat light effect will not work.");
+        
+        // Store original colors of the assigned lights
+        if (directionalLight1 != null)
+        {
+            originalLightColor1 = directionalLight1.color;
+            Debug.Log("GameManager: Directional Light 1 found: '" + directionalLight1.gameObject.name + "'.");
+        }
+        else
+        {
+            Debug.LogWarning("GameManager: Directional Light 1 is not assigned and could not be found automatically. Lighting effects for it will not apply.");
+        }
+
+        if (directionalLight2 != null)
+        {
+            originalLightColor2 = directionalLight2.color;
+            Debug.Log("GameManager: Directional Light 2 found: '" + directionalLight2.gameObject.name + "'.");
+        }
+        else
+        {
+            Debug.LogWarning("GameManager: Directional Light 2 is not assigned and could not be found automatically. Lighting effects for it will not apply.");
+        }
     }
     
     private void TeleportPlayerToSpawnPoint(Transform spawnPoint)
     {
         if (player == null || spawnPoint == null) return;
 
-        // Temporarily disable CharacterController for teleportation, then re-enable
         var characterController = player.GetComponent<CharacterController>();
         if (characterController != null)
         {
             characterController.enabled = false;
             player.transform.position = spawnPoint.position;
-            player.transform.rotation = spawnPoint.rotation; // Apply rotation of spawn point
+            player.transform.rotation = spawnPoint.rotation;
             characterController.enabled = true;
         } else {
-            // For other types of controllers (e.g., Rigidbody), direct transform update might be fine
             player.transform.position = spawnPoint.position;
             player.transform.rotation = spawnPoint.rotation;
         }
-        Debug.Log($"GameManager: Player teleported to '{spawnPoint.name}'.");
     }
 
     #endregion

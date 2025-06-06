@@ -3,12 +3,12 @@ using UnityEngine;
 
 public class MusicManager : MonoBehaviour
 {
-    public static MusicManager Instance;
+	public static MusicManager Instance;
 
 	[SerializeField]
 	private MusicLibrary musicLibrary;
 	[SerializeField]
-    private AudioSource musicSource;
+	private AudioSource musicSource;
 
 	private void Awake()
 	{
@@ -26,6 +26,11 @@ public class MusicManager : MonoBehaviour
 	public void PlayMusic(string trackName, float fadeDuration = 0.5f)
 	{
 		StartCoroutine(AnimateMusicCrossfade(musicLibrary.GetClipFromName(trackName), fadeDuration));
+	}
+
+	public void StopMusic(float fadeDuration = 0.5f)
+	{
+		StartCoroutine(AnimateMusicFadeOut(fadeDuration));
 	}
 
 	IEnumerator AnimateMusicCrossfade(AudioClip nextTrack, float fadeDuration = 0.5f)
@@ -48,5 +53,19 @@ public class MusicManager : MonoBehaviour
 			musicSource.volume = Mathf.Lerp(0, 1f, percent);
 			yield return null;
 		}
+	}
+
+	IEnumerator AnimateMusicFadeOut(float fadeDuration)
+	{
+		float percent = 0;
+		while (percent < 1)
+		{
+			percent += Time.deltaTime * 1 / fadeDuration;
+			musicSource.volume = Mathf.Lerp(1f, 0, percent);
+			yield return null;
+		}
+
+		musicSource.Stop();
+		musicSource.clip = null;
 	}
 }

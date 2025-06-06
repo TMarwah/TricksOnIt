@@ -10,7 +10,7 @@ public class MainMenu : MonoBehaviour
     }
     public void Level1()
     {
-        MusicManager.Instance.PlayMusic("Level1");
+        MusicManager.Instance.StopMusic();
         SceneManager.LoadScene("MainGame");
     }
     public void Quit()
