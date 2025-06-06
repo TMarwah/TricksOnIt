@@ -53,6 +53,8 @@ public class ThirdPersonMovement : MonoBehaviour
     [Range(0f, 90f)] public float maxLandingAngleDeviation = 45f;
     [Tooltip("Duration of stumble/stun animation on failed flip landing.")]
     public float stumbleDuration = 0.5f;
+    public AudioClip trickFailSFX;
+    public GameObject stumbleVFXPrefab;
 
     [Header("Trick Settings")]
     public float minTrickHeight = 2.0f;
@@ -460,6 +462,11 @@ public class ThirdPersonMovement : MonoBehaviour
         int randomIndex = UnityEngine.Random.Range(0, stumbleTexts.Count);
         BlurbText.Instance.TypeText(stumbleTexts[randomIndex]);
         comboMeter.SpendComboPoint(UnityEngine.Random.Range(0, 6) + 5);
+        if (stumbleVFXPrefab != null)
+        {
+            Instantiate(stumbleVFXPrefab, transform.position, Quaternion.identity);
+        }
+        AudioSource.PlayClipAtPoint(trickFailSFX, transform.position);
         yield return new WaitForSeconds(stumbleDuration);
         controller.enabled = true;
         Debug.Log("Player recovered from stumble.");
@@ -498,6 +505,7 @@ public class ThirdPersonMovement : MonoBehaviour
             Instantiate(wallJumpVFXPrefab, wallCheck.position, Quaternion.LookRotation(lastWallNormal));
         }
         if(animator) animator.SetTrigger("JumpTrigger");
+        comboMeter.AddComboPoint(5);
         Debug.Log("Wall Jump performed! Normal: " + lastWallNormal);
     }
 
@@ -551,7 +559,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (dashSFX != null)
         {
-            AudioSource.PlayClipAtPoint(dashVFXPrefab.GetComponent<AudioSource>().clip, transform.position);
+            AudioSource.PlayClipAtPoint(dashSFX, transform.position);
         }
 
         while (timer < dashDuration)

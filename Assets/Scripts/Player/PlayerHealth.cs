@@ -136,7 +136,7 @@ public class PlayerHealth : MonoBehaviour
             if (vignette != null)
             {
                 // Lerp intensity from 1 back down to its original value over the duration
-                vignette.intensity.value = Mathf.Lerp(1.0f, originalVignetteIntensity, timer / invulnerabilityDuration);
+                vignette.intensity.value = Mathf.Lerp(0.5f, originalVignetteIntensity, timer / invulnerabilityDuration);
             }
 
             // Player Flashing Effect

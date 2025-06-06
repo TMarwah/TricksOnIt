@@ -62,6 +62,13 @@ public class EnemyHealth : MonoBehaviour
             Debug.LogWarning($"Enemy '{gameObject.name}' died but GameManager instance is null. Enemy count not decremented.", this);
         }
 
+        EnemyChase chaseComponent = GetComponent<EnemyChase>();
+        if (chaseComponent != null && chaseComponent.isBoss)
+        {
+            Debug.Log($"EnemyHealth: This was a boss ({gameObject.name}). Notifying GameManager.");
+            GameManager.Instance.NotifyBossDefeated();
+        }
+
         Destroy(gameObject, 2f); // give time for death animation to play
     }
 }

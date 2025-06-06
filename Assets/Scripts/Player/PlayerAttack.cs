@@ -29,6 +29,7 @@ public class PlayerAttack : MonoBehaviour
     private float rightCooldownTimer = 0f;
     public bool didPlungeAttack = false;
     private bool wasGroundedLastFrame = true;
+    public GameObject shootVFXPrefab;
 
     [Header("Plunge")]
     public float plungingAttackForce = 10f;
@@ -171,14 +172,12 @@ public class PlayerAttack : MonoBehaviour
 
         for (int i = 0; i < pelletsPerShot; i++)
         {
-            if (pelletShootSound != null)
-            {
-                AudioSource.PlayClipAtPoint(pelletShootSound, transform.position, pelletShootVolume);
-            }
-
             Transform enemy = FindEnemyInSprayCone(rangedAttackRange, rangedAttackAngle);
             if (enemy != null)
             {
+                AudioSource.PlayClipAtPoint(pelletShootSound, transform.position, pelletShootVolume);
+                Vector3 vfxPosition = transform.position + transform.forward * 0.5f;
+                Instantiate(shootVFXPrefab, vfxPosition, Quaternion.identity);
                 camEffects.Shake(0.01f);
                 DealDamageToSingleEnemy(enemy, rangedKnockbackForce, 5f);
                 DealSplashDamageAround(enemy.position, rangedSplashRadius, rangedKnockbackForce * 0.5f);

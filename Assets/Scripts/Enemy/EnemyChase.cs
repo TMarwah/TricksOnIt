@@ -43,10 +43,6 @@ public class EnemyChase : MonoBehaviour
     {
         if (agent == null || player == null || (health != null && health.isDead))
         {
-            if (isBoss)
-            {
-                GameManager.Instance.NotifyBossDefeated();
-            }
             return;
         }
         if (agent.isOnOffMeshLink)

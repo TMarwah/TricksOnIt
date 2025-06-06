@@ -9901,7 +9901,7 @@ ParticleSystem:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9027514048236820045}
   serializedVersion: 8
-  lengthInSec: 0.5
+  lengthInSec: 0.1
   simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
@@ -10082,8 +10082,8 @@ ParticleSystem:
     startColor:
       serializedVersion: 2
       minMaxState: 2
-      minColor: {r: 0.44313726, g: 0.73333335, b: 0.9019608, a: 0.6}
-      maxColor: {r: 0.44470584, g: 0.73411775, b: 0.9, a: 1}
+      minColor: {r: 0.9496855, g: 0.9388351, b: 0.9168347, a: 0.6}
+      maxColor: {r: 0.852767, g: 0.9496855, b: 0.43303263, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -14711,7 +14711,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: b41c12b9e8d21c442affcda9d5c050f7, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -14815,7 +14814,7 @@ MonoBehaviour:
     loop: 0
     animateIntensity: 1
     intensityStart: 1
-    intensityEnd: 11.211579
+    intensityEnd: 6.29
     intensityDuration: 0
     intensityCurve:
       serializedVersion: 2
