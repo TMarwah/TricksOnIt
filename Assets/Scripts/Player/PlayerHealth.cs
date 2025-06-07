@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 using System.Collections;
-using UnityEngine.Rendering; // Required for Volume
-using UnityEngine.Rendering.Universal; // Required for URP Vignette
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -30,8 +30,7 @@ public class PlayerHealth : MonoBehaviour
     private bool isDead = false;
     private bool isInvulnerable = false;
     private Unity.Cinemachine.CinemachineCamera virtualCamera;
-
-    // UPDATED: Reference to the player's SkinnedMeshRenderer
+    
     private SkinnedMeshRenderer[] playerRenderers;
 
     private void Awake()
@@ -39,7 +38,6 @@ public class PlayerHealth : MonoBehaviour
         animator = GetComponent<Animator>();
         virtualCamera = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
 
-        // UPDATED: Find SkinnedMeshRenderer components on this object or its children.
         playerRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
         if (playerRenderers == null || playerRenderers.Length == 0)
         {
@@ -68,10 +66,10 @@ public class PlayerHealth : MonoBehaviour
     public void ChangeHealth(float changeAmount)
     {
         _currentHealth += changeAmount;
-        _currentHealth = Mathf.Clamp(_currentHealth, 0, MaxHealth); // Good practice to clamp health
+        _currentHealth = Mathf.Clamp(_currentHealth, 0, MaxHealth);
         OnHealthChange?.Invoke();
 
-        if (_currentHealth <= 0 && !isDead) // Prevent Die() from being called multiple times
+        if (_currentHealth <= 0 && !isDead)
         {
             Die();
         }
@@ -80,6 +78,8 @@ public class PlayerHealth : MonoBehaviour
     public void RestoreHealthToFull()
     {
         _currentHealth = MaxHealth;
+        animator.SetTrigger("Undie");
+        isDead = false;
         OnHealthChange?.Invoke();
     }
 
@@ -99,74 +99,58 @@ public class PlayerHealth : MonoBehaviour
         StartCoroutine(InvulnerabilityCoroutine());
     }
 
-    /// <summary>
-    /// MODIFIED: Coroutine now handles both vignette pulse and SkinnedMeshRenderer flashing.
-    /// </summary>
     private IEnumerator InvulnerabilityCoroutine()
     {
         isInvulnerable = true;
-        isDraining = false; // Pause health drain during invulnerability
+        isDraining = false;
 
         float timer = 0f;
         Vignette vignette = null;
         float originalVignetteIntensity = 50f;
         Color[] originalPlayerColors = new Color[playerRenderers.Length];
 
-        // --- Setup Effects ---
-        // Safely get the vignette and store its original intensity
         if (globalVolume != null && globalVolume.profile.TryGet<Vignette>(out vignette))
         {
             originalVignetteIntensity = vignette.intensity.value;
-            // Set our overrides to true so the script has control
             vignette.color.overrideState = true;
             vignette.intensity.overrideState = true;
             vignette.color.value = Color.red;
         }
 
-        // Store the original colors of all SkinnedMeshRenderers
         for (int i = 0; i < playerRenderers.Length; i++)
         {
             originalPlayerColors[i] = playerRenderers[i].material.color;
         }
 
-        // --- Main Invulnerability Loop ---
         while (timer < invulnerabilityDuration)
         {
-            // Vignette Pulse Effect: Start high and fade out
             if (vignette != null)
             {
-                // Lerp intensity from 1 back down to its original value over the duration
                 vignette.intensity.value = Mathf.Lerp(0.5f, originalVignetteIntensity, timer / invulnerabilityDuration);
             }
 
-            // Player Flashing Effect
             foreach (var renderer in playerRenderers)
             {
                 if (renderer != null)
                 {
-                    // Use cosine wave to create a smooth flash on/off effect
                     float alpha = Mathf.Abs(Mathf.Cos(timer * (1 / flashInterval) * Mathf.PI * 2)) * (1 - flashAlpha) + flashAlpha;
                     Color originalColor = renderer.material.color;
                     renderer.material.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
                 }
             }
-
             timer += Time.deltaTime;
-            yield return null; // Wait for the next frame
+            yield return null;
         }
 
-        // --- Cleanup Effects ---
         isInvulnerable = false;
-        isDraining = true; // Resume health drain
+        isDraining = true;
 
-        // Reset vignette to its original state
         if (vignette != null)
         {
             vignette.intensity.value = originalVignetteIntensity;
-            vignette.color.value = Color.black; // Or whatever your default color is
+            vignette.color.value = Color.black;
         }
 
-        // Ensure all SkinnedMeshRenderers are fully visible after invulnerability ends
         for (int i = 0; i < playerRenderers.Length; i++)
         {
             if (playerRenderers[i] != null)
@@ -178,13 +162,16 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
-        if (isDead) return; // Ensure this only runs once
+        if (isDead) return;
         isDead = true;
         _currentHealth = 0;
         OnHealthChange?.Invoke();
 
         Debug.Log("Player has died.");
         animator?.SetTrigger("Die");
+        
+        // Notify the GameManager to start the game over sequence
+        GameManager.Instance?.NotifyPlayerDied();
     }
 
     public bool IsDead()

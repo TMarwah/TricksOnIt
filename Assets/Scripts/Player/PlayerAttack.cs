@@ -23,49 +23,43 @@ public class PlayerAttack : MonoBehaviour
     public float rangedKnockbackForce = 0.05f;
     public float rangedSplashRadius = 0.1f;
     public int pelletsPerShot = 3;
-    public float handCooldown = 0.5f;
+    public float rangedAttackCooldown = 0.5f;
+    private float rangedAttackCooldownTimer = 0f;
 
-    private float leftCooldownTimer = 0f;
-    private float rightCooldownTimer = 0f;
     public bool didPlungeAttack = false;
     private bool wasGroundedLastFrame = true;
     public GameObject shootVFXPrefab;
 
     [Header("Plunge")]
     public float plungingAttackForce = 10f;
+    // NEW: Variables to control Plunge Attack scaling
+    [Tooltip("The base radius of the plunge attack at the lowest combo rank.")]
+    public float plungeBaseRange = 2.0f;
+    [Tooltip("How much radius is added to the plunge attack for each combo rank above 'F'.")]
+    public float plungeBonusRangePerRank = 0.75f;
 
     [Header("VFX")]
     public GameObject hitSparkPrefab;
     public GameObject plungeAttackVFXPrefab;
 
-        [Header("Audio VFX")]
-    [Tooltip("The audio clip for shooting a pellet.")]
+    [Header("Audio VFX")]
     public AudioClip pelletShootSound;
-    [Tooltip("The volume for the pellet shooting sound.")]
     [Range(0f, 1f)]
     public float pelletShootVolume = 0.8f;
-    [Tooltip("The audio clip for a successful hit on an enemy.")]
     public AudioClip hitSound;
-    [Tooltip("The volume for the hit sound.")]
     [Range(0f, 1f)]
     public float hitVolume = 0.7f;
-    [Tooltip("The audio clip for the plunge attack impact.")]
     public AudioClip plungeImpactSound;
-    [Tooltip("The volume for the plunge impact sound.")]
     [Range(0f, 1f)]
     public float plungeImpactVolume = 1.0f;
 
     private bool isAiming = false;
-    private float shootComboTimer = 0f;
 
     void Awake()
     {
         playerController = GetComponent<ThirdPersonMovement>();
-        Animator foundAnimator = GetComponent<Animator>();
-        if (foundAnimator != null)
-        {
-            animator = foundAnimator;
-        }
+        animator = GetComponent<Animator>();
+
         var cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
         if (cineCam != null)
         {
@@ -78,111 +72,44 @@ public class PlayerAttack : MonoBehaviour
     {
         if (GetComponent<PlayerHealth>().IsDead()) return;
 
-        leftCooldownTimer -= Time.deltaTime;
-        rightCooldownTimer -= Time.deltaTime;
+        // Decrement timers
+        rangedAttackCooldownTimer -= Time.deltaTime;
         lightAttackTimer -= Time.deltaTime;
 
-        // Maintain aiming while either Q or E is held down
-        bool leftHeld = Input.GetKey(KeyCode.Q);
-        bool rightHeld = Input.GetKey(KeyCode.E);
+        // --- RANGED ATTACK ON RIGHT MOUSE BUTTON ---
+        bool isHoldingAim = Input.GetMouseButton(1);
 
-        // Update aiming state on player and local flag
-        isAiming = playerController.isGrounded && (leftHeld || rightHeld);
+        isAiming = playerController.isGrounded && isHoldingAim;
         playerController.isAiming = isAiming;
         animator.SetBool("isAiming", isAiming);
 
-        // --- SHOOTING: Holding Q on ground spends 1 trick's worth of combo points per second ---
-        if (playerController.isGrounded && leftHeld)
-        {
-            shootComboTimer += Time.deltaTime;
-            if (shootComboTimer >= 1f)
-            {
-            int pointsToSpend = comboMeter != null ? comboMeter.pointsPerTrick / 10 : 1;
-            if (comboMeter != null && comboMeter.HasComboPoints(pointsToSpend))
-            {
-                comboMeter.SpendComboPoint(pointsToSpend);
-                StartCoroutine(PerformRangedAttack("Left"));
-                leftCooldownTimer = handCooldown;
-            }
-            else
-            {
-                BlurbText.Instance.TypeText("I can't do that right now!");
-            }
-            shootComboTimer = 0f;
-            }
-        }
-        else
-        {
-            shootComboTimer = 0f;
-        }
-
-        // --- SHOOTING: Holding E on ground spends 1 trick's worth of combo points per second ---
-        if (playerController.isGrounded && rightHeld)
-        {
-            shootComboTimer += Time.deltaTime;
-            if (shootComboTimer >= 1f)
-            {
-            int pointsToSpend = comboMeter != null ? comboMeter.pointsPerTrick / 10 : 1;
-            if (comboMeter != null && comboMeter.HasComboPoints(pointsToSpend))
-            {
-                comboMeter.SpendComboPoint(pointsToSpend);
-                StartCoroutine(PerformRangedAttack("Right"));
-                rightCooldownTimer = handCooldown;
-            }
-            else
-            {
-                BlurbText.Instance.TypeText("I can't do that right now!");
-            }
-            shootComboTimer = 0f;
-            }
-        }
-        else
-        {
-            shootComboTimer = 0f;
-        }
-
-        // Fire left hand shot if cooldown allows and key held
-        if (leftHeld && leftCooldownTimer <= 0f && playerController.isGrounded)
+        if (isAiming && rangedAttackCooldownTimer <= 0f)
         {
             if (comboMeter != null && comboMeter.HasComboPoints())
             {
-            comboMeter.SpendComboPoint();
-            StartCoroutine(PerformRangedAttack("Left"));
-            leftCooldownTimer = handCooldown;
+                comboMeter.SpendComboPoint();
+                StartCoroutine(PerformRangedAttack());
+                rangedAttackCooldownTimer = rangedAttackCooldown;
             }
         }
 
-        // Fire right hand shot if cooldown allows and key held
-        if (rightHeld && rightCooldownTimer <= 0f && playerController.isGrounded)
+        // --- LIGHT ATTACK & MOVEMENT ATTACKS (Left Mouse) ---
+        if (Input.GetMouseButtonDown(0) && lightAttackTimer <= 0f)
         {
-            if (comboMeter != null && comboMeter.HasComboPoints())
+            if (playerController.isGrounded)
             {
-            comboMeter.SpendComboPoint();
-            StartCoroutine(PerformRangedAttack("Right"));
-            rightCooldownTimer = handCooldown;
+                PerformLightAttack(); // Handles both dash and standard melee
             }
-        }
-
-        // --- LIGHT ATTACK ---
-        if (Input.GetMouseButtonDown(0) && playerController.isGrounded && lightAttackTimer <= 0f)
-        {
-            comboMeter.SpendComboPoint();
-            PerformLightAttack();
-            lightAttackTimer = lightAttackCooldown;
-        }
-        else if (Input.GetMouseButtonDown(0) && !playerController.isGrounded)
-        {
-            if (comboMeter != null && comboMeter.HasComboPoints(5))
+            else
             {
-                comboMeter.SpendComboPoint(5);
+                // MODIFIED: Plunge attack no longer costs combo points.
                 StartCoroutine(PerformPlungingAttack());
             }
-            else
-            {
-                BlurbText.Instance.TypeText("I can't do that right now!");
-            }
+            lightAttackTimer = lightAttackCooldown;
         }
 
+
+        // --- PLUNGE ATTACK LANDING ---
         if (didPlungeAttack && playerController.isGrounded && !wasGroundedLastFrame)
         {
             if (plungeAttackVFXPrefab != null)
@@ -191,7 +118,6 @@ public class PlayerAttack : MonoBehaviour
                 vfxPos.y -= 1f;
                 Instantiate(plungeAttackVFXPrefab, vfxPos, Quaternion.identity);
             }
-            // NEW: Play plunge impact sound
             if (plungeImpactSound != null)
             {
                 AudioSource.PlayClipAtPoint(plungeImpactSound, transform.position, plungeImpactVolume);
@@ -202,9 +128,9 @@ public class PlayerAttack : MonoBehaviour
         wasGroundedLastFrame = playerController.isGrounded;
     }
 
-    IEnumerator PerformRangedAttack(string hand)
+    IEnumerator PerformRangedAttack()
     {
-        animator.SetTrigger(hand == "Left" ? "ShootLeft" : "ShootRight");
+        animator.SetTrigger("Shoot");
 
         for (int i = 0; i < pelletsPerShot; i++)
         {
@@ -222,6 +148,8 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
+    // Unchanged methods (FindEnemyInSprayCone, DealDamageToSingleEnemy, etc.) go here...
+    #region Unchanged Helper Methods
     Transform FindEnemyInSprayCone(float range, float angle)
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, range);
@@ -297,16 +225,23 @@ public class PlayerAttack : MonoBehaviour
             }
         }
     }
+    #endregion
 
+    // MODIFIED: Logic now separates cost for melee vs. dash attacks.
     void PerformLightAttack()
     {
         if (playerController.isSprinting && playerController.isGrounded)
         {
+            // --- DASH ATTACK (No Cost) ---
+            // NOTE: To control VFX, you would modify DashForward() in your ThirdPersonMovement script
+            // to accept a boolean, like so: DashForward(GetComboRankValue() > 0)
             StartCoroutine(playerController.DashForward());
             StartCoroutine(DealContactDamageDuringDash());
         }
         else if (playerController.isGrounded)
         {
+            // --- STANDARD MELEE (Has Cost) ---
+            comboMeter?.SpendComboPoint();
             animator.SetTrigger("LightAttack");
         }
     }
@@ -316,11 +251,18 @@ public class PlayerAttack : MonoBehaviour
         DealDamageToEnemies(attackRange, attackAngle, knockbackForce);
     }
 
+    // MODIFIED: Plunge attack now scales its damage radius based on combo rank.
     IEnumerator PerformPlungingAttack()
     {
         StartCoroutine(playerController.PlungeDownward(40f));
         yield return new WaitUntil(() => playerController.isGrounded);
-        DealDamageToEnemies(attackRange, 360f, plungingAttackForce);
+
+        // Calculate the attack's range based on the current combo rank
+        int rankValue = GetComboRankValue();
+        float finalRange = plungeBaseRange + (rankValue * plungeBonusRangePerRank);
+
+        Debug.Log($"Plunging with rank {rankValue}, final range: {finalRange}"); // For debugging
+        DealDamageToEnemies(finalRange, 360f, plungingAttackForce);
         didPlungeAttack = true;
     }
 
@@ -344,11 +286,17 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
+    // MODIFIED: Dash attack now does no damage at the lowest combo rank.
     IEnumerator DealContactDamageDuringDash()
     {
+        // At rank "F" (value 0), this attack does nothing.
+        if (GetComboRankValue() == 0)
+        {
+            yield break;
+        }
+
         float timer = 0f;
         float duration = playerController.dashDuration;
-
         HashSet<Collider> hitEnemies = new HashSet<Collider>();
 
         while (timer < duration)
@@ -368,6 +316,8 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
+    // Unchanged knockback methods...
+    #region Unchanged Knockback Methods
     IEnumerator DelayedKnockbackAfterHitstop(Transform enemy, Vector3 direction, float force)
     {
         yield return new WaitUntil(() => !HitStopManager.Instance.IsHitStopActive);
@@ -384,6 +334,25 @@ public class PlayerAttack : MonoBehaviour
             rb.AddForce(direction * force, ForceMode.Impulse);
             rb.linearVelocity = direction * force;
             agent.enabled = true;
+        }
+    }
+    #endregion
+    
+    // NEW: Helper function to convert the combo letter into a numeric value for scaling.
+    private int GetComboRankValue()
+    {
+        if (comboMeter == null) return 0;
+
+        string rating = comboMeter.GetComboRating();
+        switch (rating)
+        {
+            case "S": return 5;
+            case "A": return 4;
+            case "B": return 3;
+            case "C": return 2;
+            case "D": return 1;
+            case "F":
+            default: return 0;
         }
     }
 }

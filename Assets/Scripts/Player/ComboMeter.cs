@@ -132,7 +132,7 @@ public class ComboMeter : MonoBehaviour
         }
     }
 
-    string GetComboRating()
+    public string GetComboRating()
     {
         float percent = (float)currentComboPoints / maxComboPoints;
         if (percent >= 5f / 6f) return "S";

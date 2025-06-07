@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering; // Required for Volume
 using UnityEngine.Rendering.Universal; // Required for URP effects
+using UnityEngine.UI; // Required for Image component
 
 /// <summary>
 /// A centralized manager for game state, level progression, and debug controls.
@@ -26,12 +27,22 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private GameObject endGameUI;
     [SerializeField]
+    private GameObject gameOverUI; // The main parent container for all game over elements
+    [Tooltip("The specific image that will fade in to darken the screen.")]
+    [SerializeField]
+    private Image gameOverBackground;
+    [Tooltip("The parent object holding text/buttons that will pop in after the fade.")]
+    [SerializeField]
+    private GameObject gameOverTextContainer;
+    [SerializeField]
     private GameObject pauseMenuUI;
     [Header("Audio")]
     [SerializeField]
     private AudioClip alarmSfx;
     [SerializeField]
     private AudioClip winSFX;
+    [SerializeField]
+    private AudioClip deathSFX;
     [SerializeField]
     private AudioSource musicSource;
     [SerializeField]
@@ -44,6 +55,10 @@ public class GameManager : MonoBehaviour
     [Range(0.01f, 1f)]
     public float bossDefeatSlowMoFactor = 0.1f;
     public float bossDefeatSlowMoDuration = 3.0f;
+    [Tooltip("How long the screen takes to fade to black on game over.")]
+    public float gameOverFadeInDuration = 1.5f;
+    [Tooltip("Total time from player death until the level reloads.")]
+    public float gameOverDuration = 4.0f;
     public Color bossDefeatLightColor = Color.red;
     [Header("End Game UI Animation")]
     public float popInDuration = 0.5f;
@@ -105,7 +120,9 @@ public class GameManager : MonoBehaviour
             musicSource.clip = backgroundMusicLoop;
             musicSource.Play();
         }
+
         if (endGameUI != null) endGameUI.SetActive(false);
+        if (gameOverUI != null) gameOverUI.SetActive(false);
         if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
 
         FindMainDirectionalLight();
@@ -118,19 +135,15 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning("GameManager: No Skybox material found or it lacks a _Tint property. Skybox tinting will not work.");
         }
 
-        // --- This is the key section for your issue ---
         if (globalVolume != null && globalVolume.profile.TryGet<ColorAdjustments>(out colorAdjustments))
         {
-            // Successfully found the Color Adjustments override.
-            // We store the original value so we can restore it later.
             originalSaturation = colorAdjustments.saturation.value; 
             Debug.Log("GameManager: Found and cached Color Adjustments from the Global Volume Profile.");
         }
         else
         {
-            // This warning will appear if the Volume isn't assigned or the Profile is missing the override.
             Debug.LogWarning("GameManager: Global Volume reference is missing or its profile does not contain a 'Color Adjustments' override. Saturation effects will not work.", this);
-            colorAdjustments = null; // Ensure it's null if not found.
+            colorAdjustments = null;
         }
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -166,7 +179,6 @@ public class GameManager : MonoBehaviour
 
     #region Public Methods
 
-    // Unchanged
     public void DecrementEnemiesRemaining()
     {
         if (CurrentEnemiesRemaining > 0)
@@ -175,8 +187,7 @@ public class GameManager : MonoBehaviour
             OnEnemiesRemainingChanged?.Invoke(CurrentEnemiesRemaining);
         }
     }
-
-    // Unchanged
+    
     public void NotifyBossDefeated()
     {
         if (isAdvancingLevel)
@@ -185,6 +196,12 @@ public class GameManager : MonoBehaviour
             return;
         }
         StartCoroutine(BossDefeatSequenceCoroutine());
+    }
+
+    public void NotifyPlayerDied()
+    {
+        if (isAdvancingLevel) return;
+        StartCoroutine(PlayerDeathSequenceCoroutine());
     }
 
     public void ResumeGame()
@@ -217,7 +234,7 @@ public class GameManager : MonoBehaviour
 
         SceneManager.LoadScene("Menu");
     }
-
+    
     public void ExitGame()
     {
         Debug.Log("Exiting game...");
@@ -232,7 +249,6 @@ public class GameManager : MonoBehaviour
 
     #region Core Game Logic
 
-    // --- All methods in this region are unchanged from your original script ---
     private void RunCurrentLevelLogic()
     {
         if (CurrentLevelIndex < 0 || CurrentLevelIndex >= levels.Length) return;
@@ -293,6 +309,7 @@ public class GameManager : MonoBehaviour
         
         if (mainCanvasUI != null) mainCanvasUI.SetActive(true);
         if (endGameUI != null) endGameUI.SetActive(false);
+        if (gameOverUI != null) gameOverUI.SetActive(false);
         if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -330,7 +347,7 @@ public class GameManager : MonoBehaviour
         }
 
         if (mainCanvasUI != null) mainCanvasUI.SetActive(false);
-        if (endGameUI != null) StartCoroutine(AnimateEndGameUICoroutine());
+        if (endGameUI != null) StartCoroutine(AnimateGenericUICoroutine(endGameUI));
         if (pauseMenuUI != null) pauseMenuUI.SetActive(false); 
 
         if (directionalLight1 != null) originalLightColor1 = directionalLight1.color;
@@ -384,21 +401,107 @@ public class GameManager : MonoBehaviour
         
         ChangeLevel(CurrentLevelIndex + 1);
     }
-    private IEnumerator AnimateEndGameUICoroutine()
+    
+    // MODIFIED: This coroutine now has multiple phases for a more cinematic Game Over.
+    private IEnumerator PlayerDeathSequenceCoroutine()
     {
-        CanvasGroup canvasGroup = endGameUI.GetComponent<CanvasGroup>();
+        isAdvancingLevel = true;
+        Debug.Log("GameManager: Player died! Starting game over sequence.");
+
+        // --- Preparation ---
+        if (musicSource != null)
+        {
+            musicSource.Stop();
+            if (deathSFX != null) musicSource.PlayOneShot(deathSFX);
+        }
+        if (mainCanvasUI != null) mainCanvasUI.SetActive(false);
+        if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
+        if (gameOverUI != null) gameOverUI.SetActive(true);
+
+        // Hide text and prepare background for fading
+        if (gameOverTextContainer != null) gameOverTextContainer.SetActive(false);
+        if (gameOverBackground != null)
+        {
+            Color bgColor = gameOverBackground.color;
+            bgColor.a = 0;
+            gameOverBackground.color = bgColor;
+            gameOverBackground.gameObject.SetActive(true);
+        }
+
+        try
+        {
+            // --- Phase 1: Slow-mo and fade in background ---
+            float fadeTimer = 0f;
+            while (fadeTimer < gameOverFadeInDuration)
+            {
+                fadeTimer += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(fadeTimer / gameOverFadeInDuration);
+
+                Time.timeScale = Mathf.Lerp(1.0f, bossDefeatSlowMoFactor, progress);
+                if (colorAdjustments != null)
+                {
+                    colorAdjustments.saturation.value = Mathf.Lerp(originalSaturation, -100f, progress);
+                }
+                if (gameOverBackground != null)
+                {
+                    Color newColor = gameOverBackground.color;
+                    newColor.a = Mathf.Lerp(0, 1, progress); // Fade in alpha
+                    gameOverBackground.color = newColor;
+                }
+                yield return null;
+            }
+
+            // Snap to final values for Phase 1
+            Time.timeScale = bossDefeatSlowMoFactor;
+            if (colorAdjustments != null) colorAdjustments.saturation.value = -100f;
+
+            // --- Phase 2: Pop in text ---
+            if (gameOverTextContainer != null)
+            {
+                gameOverTextContainer.SetActive(true);
+                // We use 'yield return' to wait for this animation to finish
+                yield return StartCoroutine(AnimateGenericUICoroutine(gameOverTextContainer));
+            }
+
+            // --- Phase 3: Wait for remaining duration ---
+            float timeSpent = gameOverFadeInDuration + popInDuration;
+            float remainingTime = gameOverDuration - timeSpent;
+            if (remainingTime > 0)
+            {
+                yield return new WaitForSecondsRealtime(remainingTime);
+            }
+        }
+        finally
+        {
+            // --- Phase 4: Cleanup ---
+            Debug.Log("GameManager: Game over sequence finished. Resetting state.");
+            Time.timeScale = 1.0f;
+            if (colorAdjustments != null)
+            {
+                colorAdjustments.saturation.value = originalSaturation;
+            }
+        }
+
+        // --- Restart Level ---
+        ChangeLevel(CurrentLevelIndex);
+    }
+
+    private IEnumerator AnimateGenericUICoroutine(GameObject uiToShow)
+    {
+        // This coroutine assumes the 'uiToShow' object has a CanvasGroup.
+        CanvasGroup canvasGroup = uiToShow.GetComponent<CanvasGroup>();
         if (canvasGroup == null)
         {
-            Debug.LogError("GameManager: End Game UI is missing a CanvasGroup component! Animation will fail.", endGameUI);
-            endGameUI.SetActive(true);
+            Debug.LogError($"GameManager: UI Panel '{uiToShow.name}' is missing a CanvasGroup component! Animation will fail.", uiToShow);
+            uiToShow.SetActive(true);
             yield break;
         }
 
         canvasGroup.alpha = 0;
-        endGameUI.SetActive(true);
+        uiToShow.SetActive(true);
 
         List<RectTransform> childrenToAnimate = new List<RectTransform>();
-        foreach (Transform child in endGameUI.transform)
+        foreach (Transform child in uiToShow.transform)
         {
             RectTransform rt = child.GetComponent<RectTransform>();
             if (rt != null)
@@ -463,18 +566,20 @@ public class GameManager : MonoBehaviour
     public void PauseGame()
     {
         if (isPaused) return;
-        if (colorAdjustments != null)
-        {
-            colorAdjustments.saturation.value = -100f;
-        }
 
         Debug.Log("Pausing game...");
         if (pauseMenuUI != null) pauseMenuUI.SetActive(true);
         if (mainCanvasUI != null) mainCanvasUI.SetActive(false);
         Time.timeScale = 0f;
         isPaused = true;
+        
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        
+        if (colorAdjustments != null)
+        {
+            colorAdjustments.saturation.value = -100f;
+        }
     }
     
     private void FindMainDirectionalLight()
@@ -514,6 +619,5 @@ public class GameManager : MonoBehaviour
             player.transform.rotation = spawnPoint.rotation;
         }
     }
-
     #endregion
 }

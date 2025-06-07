@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 771e15dfeac317743b12003ac2189535
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/README.md
+  uploadId: 726447

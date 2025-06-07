@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8d3cae7ec85d20a45b8bedd0eee7121f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 23800000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Scenes/Environment Showcase/NavMesh-NavMeshSurface.asset
+  uploadId: 726447

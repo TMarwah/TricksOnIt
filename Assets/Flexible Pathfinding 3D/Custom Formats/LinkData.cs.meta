@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: bec61fcb6e266d3438c8a82521285c12
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 308284
+  packageName: Flexible Pathfinding System For 3D Environments
+  packageVersion: 1.0.0
+  assetPath: Assets/Flexible Pathfinding 3D/Custom Formats/LinkData.cs
+  uploadId: 726447
