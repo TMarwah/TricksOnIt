@@ -29,8 +29,6 @@ public class EnemySpawner : MonoBehaviour
     [Header("References")]
     [Tooltip("Drag your Player GameObject here, for enemies to target.")]
     public Transform player;
-    // [Tooltip("Drag your LevelManager GameObject here.")]
-    // private LevelManager levelManager;
 
     private int _enemiesRemainingInLevel; // Total enemies to spawn for the current level
     private int _enemiesSpawnedInCurrentWave;
@@ -86,16 +84,6 @@ public class EnemySpawner : MonoBehaviour
         {
             Debug.LogError("EnemySpawner: Player Transform is not assigned! Enemies will not have a target.", this);
         }
-        // if (levelManager == null)
-        // {
-        //     levelManager = GetComponentInParent<LevelManager>();
-        //     if (levelManager == null)
-        //     {
-        //         Debug.LogError("EnemySpawner: LevelManager is not assigned and could not be found in parent!", this);
-        //         enabled = false;
-        //         return;
-        //     }
-        // }
     }
 
     /// <summary>
@@ -165,7 +153,9 @@ public class EnemySpawner : MonoBehaviour
         Transform spawnPoint = regularSpawnPoints[_currentSpawnPointIndex];
         _currentSpawnPointIndex = (_currentSpawnPointIndex + 1) % regularSpawnPoints.Length;
 
+        float randomScale = Random.Range(0.9f, 1.1f);
         GameObject enemy = Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
+        enemy.transform.localScale = new Vector3(randomScale, randomScale, randomScale);
 
         // Assuming EnemyChase is the script that handles enemy movement/AI
         EnemyChase enemyChase = enemy.GetComponent<EnemyChase>();

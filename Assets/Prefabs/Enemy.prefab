@@ -234,6 +234,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 50
   deathVFX: {fileID: 8791802859087666345, guid: ae07f2a45f14a82428409cfe410e6002, type: 3}
+  deathSFX: {fileID: 8300000, guid: 2c303c07a48c08b4d9f9ecb0b833ce36, type: 3}
   isDead: 0
 --- !u!95 &-5060009451449788878
 Animator:

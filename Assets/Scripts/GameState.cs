@@ -308,7 +308,7 @@ public class GameManager : MonoBehaviour
         OnBossAboutToSpawn?.Invoke();
         if (alarmSfx != null && musicSource != null)
         {
-            musicSource.PlayOneShot(alarmSfx);
+            musicSource.PlayOneShot(alarmSfx, 0.5f);
         }
 
         yield return new WaitForSeconds(bossSpawnDelay);

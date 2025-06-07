@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class EnemyHealth : MonoBehaviour
@@ -6,13 +7,16 @@ public class EnemyHealth : MonoBehaviour
     private float currentHealth;
 
     public GameObject deathVFX;
+    public AudioClip deathSFX;
     private Animator animator;
     public bool isDead = false;
+    private EnemyChase chaseComponent;
 
     void Start()
     {
         currentHealth = maxHealth;
         animator = GetComponent<Animator>();
+        chaseComponent = GetComponent<EnemyChase>();
     }
 
     public void TakeDamage(float amount)
@@ -21,7 +25,7 @@ public class EnemyHealth : MonoBehaviour
 
         currentHealth -= amount;
 
-        if (animator != null)
+        if (animator != null && !(chaseComponent.isBoss && amount < 10))
         {
             animator.SetTrigger("Flinch");
         }
@@ -36,39 +40,52 @@ public class EnemyHealth : MonoBehaviour
     {
         isDead = true;
 
-        if (deathVFX != null)
-        {
-            Instantiate(deathVFX, transform.position, Quaternion.identity);
-        }
-
         if (animator != null)
         {
             animator.SetTrigger("Die");
         }
 
-        // Disable navmesh and collider (or destroy after delay)
+        // Disable navmesh and collider
         UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (agent != null) agent.enabled = false;
 
         Collider col = GetComponent<Collider>();
         if (col != null) col.enabled = false;
+
         // Notify LevelManager if assigned, otherwise try to find it
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.DecrementEnemiesRemaining(); // Notify the GameManager directly
+            GameManager.Instance.DecrementEnemiesRemaining();
         }
         else
         {
             Debug.LogWarning($"Enemy '{gameObject.name}' died but GameManager instance is null. Enemy count not decremented.", this);
         }
 
-        EnemyChase chaseComponent = GetComponent<EnemyChase>();
         if (chaseComponent != null && chaseComponent.isBoss)
         {
             Debug.Log($"EnemyHealth: This was a boss ({gameObject.name}). Notifying GameManager.");
             GameManager.Instance.NotifyBossDefeated();
         }
 
-        Destroy(gameObject, 2f); // give time for death animation to play
+        // Start coroutine to handle delayed destruction and VFX
+        StartCoroutine(HandleDeath());
+    }
+
+    private IEnumerator HandleDeath()
+    {
+        yield return new WaitForSeconds(2f); // Wait for 2 seconds
+
+        if (deathSFX != null)
+        {
+            AudioSource.PlayClipAtPoint(deathSFX, transform.position);
+        }
+        if (deathVFX != null)
+        {
+            Instantiate(deathVFX, transform.position, Quaternion.identity);
+        }
+
+
+        Destroy(gameObject);
     }
 }
