@@ -267,6 +267,7 @@ public class GameManager : MonoBehaviour
         if (newIndex >= levels.Length)
         {
             Debug.LogWarning("GameManager: Reached final level.");
+            GoToTitleScreen();
             isAdvancingLevel = false;
             return;
         }
