@@ -40,7 +40,6 @@ public class ThirdPersonMovement : MonoBehaviour
     public LayerMask wallMask;
     public float wallJumpVerticalBoost = 5f;
     public float wallJumpHorizontalBoost = 5f;
-    // NEW: Wall slide mechanic
     [Tooltip("How fast the player slides down a wall when hanging.")]
     public float wallSlideSpeed = 2f;
 
@@ -84,7 +83,7 @@ public class ThirdPersonMovement : MonoBehaviour
     public bool isGrounded;
     public bool isSprinting;
     bool isTouchingWall;
-    bool isWallSliding = false; // NEW: State for wall sliding
+    bool isWallSliding = false;
 
     bool justWallJumped = false;
     float airControlMultiplier;
@@ -100,24 +99,13 @@ public class ThirdPersonMovement : MonoBehaviour
     private bool _justLanded = false;
     private Vector3 _initiatedFlipTypeAxis = Vector3.zero;
 
-    // (Awake and Start methods remain the same...)
-    #region Standard Methods
     void Awake()
     {
         controller = GetComponent<CharacterController>();
         playerHealth = GetComponent<PlayerHealth>();
-
-        Animator foundAnimator = GetComponent<Animator>();
-        if (foundAnimator != null)
-        {
-            animator = foundAnimator;
-            model = animator.transform;
-        }
-        else
-        {
-            Debug.LogError("ThirdPersonMovement: Animator component not found.", this);
-        }
-
+        animator = GetComponent<Animator>();
+        model = animator.transform;
+        
         cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
         if (cineCam != null)
         {
@@ -125,7 +113,6 @@ public class ThirdPersonMovement : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("ThirdPersonMovement: CinemachineCamera not found. Falling back to main camera if available.", this);
             if (Camera.main != null) {
                 camTransform = Camera.main.transform;
             } else {
@@ -139,28 +126,13 @@ public class ThirdPersonMovement : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         isSprinting = false;
         airControlMultiplier = airControlFactor;
-        comboMeter = GetComponent<ComboMeter>();
-        if (comboMeter == null)
-        {
-            Debug.LogWarning("ThirdPersonMovement: ComboMeter not found. Points will not be awarded.", this);
-        }
-
-        if (flipSpeedProfile == null || flipSpeedProfile.keys.Length == 0)
-        {
-            Debug.LogWarning("ThirdPersonMovement: flipSpeedProfile AnimationCurve is not set. Defaulting to constant speed.", this);
-            flipSpeedProfile = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 1));
-        }
+        comboMeter = FindObjectOfType<ComboMeter>();
 
         if (bankedPointsText != null)
         {
             bankedPointsText.gameObject.SetActive(false);
         }
-        else
-        {
-            Debug.LogWarning("ThirdPersonMovement: Banked Points Text UI is not assigned.", this);
-        }
     }
-    #endregion
 
     void Update()
     {
@@ -168,58 +140,44 @@ public class ThirdPersonMovement : MonoBehaviour
         isGrounded = controller.isGrounded;
         _justLanded = isGrounded && !previousFrameIsGrounded;
         
-        // Determine wall contact once per frame
         isTouchingWall = Physics.CheckSphere(wallCheck.position, wallCheckRadius, wallMask);
 
-        // MODIFIED: Handle all air logic in one block
         if (!isGrounded)
         {
-            // Check for wall sliding condition
             isWallSliding = isTouchingWall && velocity.y < 0 && !justWallJumped;
 
             if (isWallSliding)
             {
-                // If sliding, clamp the downward velocity to the slide speed
                 velocity.y = -wallSlideSpeed;
-                // Cancel any flip when you start sliding
                 _isPerformingFlip = false; 
                 potentialMidAirPoints = 0;
             }
             else
             {
-                // If not wall sliding, apply normal gravity
                 velocity.y += gravity * Time.deltaTime;
             }
         }
-        else // On ground
+        else
         {
-            if (velocity.y < 0)
-            {
-                velocity.y = -2f;
-            }
-            isWallSliding = false; // Cannot be wall sliding if grounded
+            velocity.y = Mathf.Max(velocity.y, -2f);
+            isWallSliding = false;
             justWallJumped = false;
-
             velocity.x = Mathf.MoveTowards(velocity.x, 0, groundDeceleration * Time.deltaTime);
             velocity.z = Mathf.MoveTowards(velocity.z, 0, groundDeceleration * Time.deltaTime);
         }
 
         if (playerHealth != null && playerHealth.IsDead())
         {
-            // ... (death logic remains the same)
             return;
         }
 
         inHitStop = HitStopManager.Instance != null && HitStopManager.Instance.IsHitStopActive;
 
-        // MODIFIED: Animator logic is now cleaner
         if (animator)
         {
             animator.SetFloat("airSpeed", velocity.y);
             animator.SetBool("isGrounded", isGrounded);
-            // Directly set the "isHanging" parameter based on our new wall slide state
             animator.SetBool("isHanging", isWallSliding);
-            if (isWallSliding) Debug.Log("should be wallsliding");
         }
 
         if (_justLanded)
@@ -247,8 +205,6 @@ public class ThirdPersonMovement : MonoBehaviour
             wallNormalTimer -= Time.deltaTime;
         else
             lastWallNormal = Vector3.zero;
-
-        // --- All movement, input, and flip logic remains largely the same below ---
         
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
@@ -256,7 +212,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         float currentSpeed = isGrounded
             ? (isAiming ? speed * aimSpeedMultiplier : (isSprinting ? speed * speedMod : speed))
-            : speed * airControlMultiplier;
+            : speed * airControlFactor;
 
         Vector3 moveDir = Vector3.zero;
         if (inputDirection.magnitude >= 0.1f && !inHitStop)
@@ -269,8 +225,16 @@ public class ThirdPersonMovement : MonoBehaviour
 
             if (camTransform != null)
             {
-                if (isAiming || !_isPerformingFlip)
+                // Here is the new logic to handle wall slide rotation
+                if (isWallSliding && lastWallNormal != Vector3.zero)
                 {
+                    // Force rotation to be parallel to the wall
+                    Quaternion targetWallRotation = Quaternion.LookRotation(-lastWallNormal);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetWallRotation, turnSmoothTime * 10f * Time.deltaTime);
+                }
+                else if (isAiming || !_isPerformingFlip)
+                {
+                    // Regular camera-based rotation
                     float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                     float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
                     transform.rotation = Quaternion.Euler(0f, angle, 0f);
@@ -304,23 +268,17 @@ public class ThirdPersonMovement : MonoBehaviour
         }
         horizontalVelocity = new Vector3(controller.velocity.x, 0, controller.velocity.z);
 
-        if (Input.GetButtonDown("Jump") && isGrounded && !isAiming)
+        if (Input.GetButtonDown("Jump") && !isAiming)
         {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-            Vector3 currentInputMoveXZ = moveDir.normalized * currentSpeed;
-            if (currentInputMoveXZ.sqrMagnitude > 0.01f) {
-                 velocity.x = currentInputMoveXZ.x * 0.5f;
-                 velocity.z = currentInputMoveXZ.z * 0.5f;
-            } else {
-                 velocity.x = horizontalVelocity.x * 0.8f;
-                 velocity.z = horizontalVelocity.z * 0.8f;
+            if(isGrounded)
+            {
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                if(animator) animator.SetTrigger("JumpTrigger");
             }
-
-            if(animator) animator.SetTrigger("JumpTrigger");
-        }
-        else if (Input.GetButtonDown("Jump") && isTouchingWall && CanWallJump())
-        {
-            PerformWallJump();
+            else if(isTouchingWall && CanWallJump())
+            {
+                PerformWallJump();
+            }
         }
 
         isSprinting = isDashing || (Input.GetKey(KeyCode.LeftShift) && isGrounded && !isAiming);
@@ -328,7 +286,7 @@ public class ThirdPersonMovement : MonoBehaviour
             animator.SetBool("isSprinting", isSprinting);
         }
 
-        if (!isGrounded && !isWallSliding) // Can't flip if you are sliding
+        if (!isGrounded && !isWallSliding)
         {
             if (IsHighEnoughForTrick() && !_isPerformingFlip)
             {
@@ -362,8 +320,7 @@ public class ThirdPersonMovement : MonoBehaviour
                 if (_currentFlipAxis != Vector3.zero)
                 {
                     flipKeyHoldTimer += Time.deltaTime;
-                    float currentSpeedMultiplier = (flipSpeedProfile != null && flipSpeedProfile.keys.Length > 0)
-                                                   ? flipSpeedProfile.Evaluate(flipKeyHoldTimer) : 1f;
+                    float currentSpeedMultiplier = flipSpeedProfile.Evaluate(flipKeyHoldTimer);
                     float rotationPerFrame = airFlipSpeed * currentSpeedMultiplier * Time.deltaTime;
                     transform.Rotate(_currentFlipAxis * rotationPerFrame, Space.Self);
                     _accumulatedFlipAngle += rotationPerFrame;
@@ -381,8 +338,6 @@ public class ThirdPersonMovement : MonoBehaviour
         UpdatePotentialPointsUI();
     }
 
-    // (The rest of your methods: UpdatePotentialPointsUI, FinishFlip, PerformStumble, CanWallJump, etc. remain the same)
-    #region Unchanged Methods
     void UpdatePotentialPointsUI()
     {
         if (bankedPointsText != null)
@@ -404,7 +359,6 @@ public class ThirdPersonMovement : MonoBehaviour
         bool isPitchOrRollFlip = _initiatedFlipTypeAxis == Vector3.right || _initiatedFlipTypeAxis == Vector3.left;
 
         if (_initiatedFlipTypeAxis == Vector3.zero && _accumulatedFlipAngle < 10f) {
-             Debug.Log("Negligible rotation, no flip evaluated.");
              return;
         }
         int pointsGained = potentialMidAirPoints;
@@ -419,17 +373,11 @@ public class ThirdPersonMovement : MonoBehaviour
                 if (pointsGained > 0 && comboMeter != null)
                 {
                     comboMeter.AddComboPoint(pointsGained);
-                    Debug.Log($"Pitch/Roll Flip Success! Added {pointsGained} combo points. Total angle: {_accumulatedFlipAngle:F1}, Landing Angle Dev: {angleDeviation:F1}");
-                }
-                else if (_accumulatedFlipAngle > 10f)
-                {
-                    Debug.Log($"Pitch/Roll Flip landed okay but not enough rotation for points. Angle: {_accumulatedFlipAngle:F1}");
                 }
             }
             else
             {
-                Debug.LogWarning($"Pitch/Roll Flip Failed! Landed at {angleDeviation:F1} degrees deviation. Angle: {_accumulatedFlipAngle:F1}. No points awarded.");
-                if (comboMeter != null) { /* Optional penalty */ }
+                if (comboMeter != null) { comboMeter.SpendComboPoint(50); }
                 StartCoroutine(PerformStumble());
             }
         }
@@ -438,11 +386,6 @@ public class ThirdPersonMovement : MonoBehaviour
             if (pointsGained > 0 && comboMeter != null)
             {
                 comboMeter.AddComboPoint(pointsGained);
-                Debug.Log($"Yaw/Spin Flip Success! Added {pointsGained} combo points. Total angle: {_accumulatedFlipAngle:F1}");
-            }
-            else if (_accumulatedFlipAngle > 10f)
-            {
-                 Debug.Log($"Yaw/Spin Flip attempted but not enough rotation for points. Angle: {_accumulatedFlipAngle:F1}");
             }
         }
     }
@@ -453,7 +396,6 @@ public class ThirdPersonMovement : MonoBehaviour
 
     private IEnumerator PerformStumble()
     {
-        Debug.Log("Player is stumbling!");
         animator.SetTrigger("Stumble");
         controller.enabled = false;
         transform.rotation = Quaternion.identity;
@@ -470,9 +412,8 @@ public class ThirdPersonMovement : MonoBehaviour
         float elapsedTime = 0f;
         while (elapsedTime < stumbleDuration)
         {
-            if (Input.GetKey(KeyCode.LeftShift)) // Check if the player is sprinting
+            if (Input.GetKey(KeyCode.LeftShift))
             {
-                Debug.Log("Player sprinted, ending stumble early.");
                 break;
             }
             elapsedTime += Time.deltaTime;
@@ -480,13 +421,12 @@ public class ThirdPersonMovement : MonoBehaviour
         }
 
         controller.enabled = true;
-        Debug.Log("Player recovered from stumble.");
     }
 
     private bool CanWallJump()
     {
         Vector3 directionToWallCheck = (wallCheck.position - controller.bounds.center).normalized;
-        if (directionToWallCheck.sqrMagnitude < 0.01f) directionToWallCheck = model.forward; // Fallback if wallCheck is at center
+        if (directionToWallCheck.sqrMagnitude < 0.01f) directionToWallCheck = model.forward;
 
         if (Physics.Raycast(controller.bounds.center, directionToWallCheck, out RaycastHit hit, controller.radius + wallCheckRadius + 0.1f, wallMask))
         {
@@ -506,7 +446,7 @@ public class ThirdPersonMovement : MonoBehaviour
         velocity = jumpDirection * wallJumpHorizontalBoost;
         velocity.y = wallJumpVerticalBoost;
         justWallJumped = true;
-        isWallSliding = false; // You are jumping away, not sliding
+        isWallSliding = false;
         _isPerformingFlip = false;
         potentialMidAirPoints = 0;
         airControlMultiplier = boostedAirControlFactor;
@@ -518,7 +458,6 @@ public class ThirdPersonMovement : MonoBehaviour
         }
         if(animator) animator.SetTrigger("JumpTrigger");
         comboMeter.AddComboPoint(5);
-        Debug.Log("Wall Jump performed! Normal: " + lastWallNormal);
     }
 
     private bool IsHighEnoughForTrick()
@@ -554,24 +493,26 @@ public class ThirdPersonMovement : MonoBehaviour
         Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
     }
 
-    public IEnumerator DashForward()
+    public IEnumerator DashForward(bool showVFX)
     {
-        Vector3 dashDirection = model.forward;
         isDashing = true;
         if (animator) animator.SetBool("isDashing", true);
+        
+        Vector3 dashDirection = model.forward;
         float timer = 0f;
         velocity.y = 0;
+        
+        Physics.IgnoreLayerCollision(gameObject.layer, LayerMask.NameToLayer("Enemy"), true);
 
-        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
-
-        GameObject dashVFX = Instantiate(dashVFXPrefab, transform.position, Quaternion.identity);
-        dashVFX.transform.SetParent(transform);
-        dashVFX.transform.localPosition = Vector3.zero;
-
-        if (dashSFX != null)
+        GameObject dashVFXInstance = null;
+        if (showVFX && dashVFXPrefab != null)
         {
-            AudioSource.PlayClipAtPoint(dashSFX, transform.position);
+            dashVFXInstance = Instantiate(dashVFXPrefab, transform.position, Quaternion.identity);
+            dashVFXInstance.transform.SetParent(transform);
+            dashVFXInstance.transform.localPosition = Vector3.zero;
         }
+
+        if (dashSFX != null) AudioSource.PlayClipAtPoint(dashSFX, transform.position);
 
         while (timer < dashDuration)
         {
@@ -581,11 +522,11 @@ public class ThirdPersonMovement : MonoBehaviour
         }
 
         yield return StartCoroutine(WaitUntilNotInsideEnemy());
-        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
+        Physics.IgnoreLayerCollision(gameObject.layer, LayerMask.NameToLayer("Enemy"), false);
         isDashing = false;
         if (animator) animator.SetBool("isDashing", false);
 
-        Destroy(dashVFX, 1f);
+        if (dashVFXInstance != null) Destroy(dashVFXInstance, 1f);
     }
 
     private IEnumerator WaitUntilNotInsideEnemy()
@@ -608,5 +549,4 @@ public class ThirdPersonMovement : MonoBehaviour
             timer += Time.deltaTime;
         }
     }
-    #endregion
 }

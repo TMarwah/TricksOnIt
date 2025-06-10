@@ -233,9 +233,7 @@ public class PlayerAttack : MonoBehaviour
         if (playerController.isSprinting && playerController.isGrounded)
         {
             // --- DASH ATTACK (No Cost) ---
-            // NOTE: To control VFX, you would modify DashForward() in your ThirdPersonMovement script
-            // to accept a boolean, like so: DashForward(GetComboRankValue() > 0)
-            StartCoroutine(playerController.DashForward());
+            StartCoroutine(playerController.DashForward(GetComboRankValue() > 600));
             StartCoroutine(DealContactDamageDuringDash());
         }
         else if (playerController.isGrounded)
