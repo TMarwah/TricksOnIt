@@ -11,6 +11,7 @@ public class EnemyHealth : MonoBehaviour
     private Animator animator;
     public bool isDead = false;
     private EnemyChase chaseComponent;
+    public ComboMeter comboMeter;
 
     void Start()
     {
@@ -45,6 +46,7 @@ public class EnemyHealth : MonoBehaviour
             animator.SetTrigger("Die");
         }
 
+        if (comboMeter != null) comboMeter.AddComboPoint(5);
         // Disable navmesh and collider
         UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (agent != null) agent.enabled = false;

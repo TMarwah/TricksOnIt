@@ -99,10 +99,10 @@ MonoBehaviour:
   attackDamage: 5
   repathThreshold: 0.1
   offsetRadius: 1.5
-  jumpHeight: 4
+  jumpHeight: 12
   jumpDuration: 2
   nearbyNavLinks: []
-  navLinkSearchRadius: 2
+  navLinkSearchRadius: 4
 --- !u!54 &-3580102187603915677
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -145,7 +145,7 @@ NavMeshAgent:
   avoidancePriority: 50
   m_AngularSpeed: 240
   m_StoppingDistance: 0.1
-  m_AutoTraverseOffMeshLink: 0
+  m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 2
@@ -236,6 +236,7 @@ MonoBehaviour:
   deathVFX: {fileID: 8791802859087666345, guid: ae07f2a45f14a82428409cfe410e6002, type: 3}
   deathSFX: {fileID: 8300000, guid: 2c303c07a48c08b4d9f9ecb0b833ce36, type: 3}
   isDead: 0
+  comboMeter: {fileID: 0}
 --- !u!95 &-5060009451449788878
 Animator:
   serializedVersion: 7

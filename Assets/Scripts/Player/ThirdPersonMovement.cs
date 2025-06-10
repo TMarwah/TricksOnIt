@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 
-[RequireComponent(typeof(PlayerHealth))]
+[RequireComponent(typeof(PlayerHealth), typeof(AudioSource))]
 public class ThirdPersonMovement : MonoBehaviour
 {
     private CharacterController controller;
@@ -14,6 +14,7 @@ public class ThirdPersonMovement : MonoBehaviour
     private Transform model;
     private Animator animator;
     private ComboMeter comboMeter;
+    private AudioSource playerAudioSource;
 
     [Header("Movement")]
     public float speed = 6f;
@@ -72,7 +73,15 @@ public class ThirdPersonMovement : MonoBehaviour
 
     public GameObject wallJumpVFXPrefab;
     public GameObject dashVFXPrefab;
+    
+    [Header("Audio")]
     public AudioClip dashSFX;
+    public AudioClip jumpSound;
+    public AudioClip landSound;
+    public AudioClip wallKickSound;
+    public AudioClip wallSlideLoopSound;
+    [Tooltip("A continuous sound of skating that pitches up with speed.")]
+    public AudioClip skateLoopSound;
 
     [Header("UI")]
     public TextMeshProUGUI bankedPointsText;
@@ -98,13 +107,15 @@ public class ThirdPersonMovement : MonoBehaviour
     private float _accumulatedFlipAngle = 0f;
     private bool _justLanded = false;
     private Vector3 _initiatedFlipTypeAxis = Vector3.zero;
-
+    private float _lastFrameVelocityY = 0f;
+    
     void Awake()
     {
         controller = GetComponent<CharacterController>();
         playerHealth = GetComponent<PlayerHealth>();
         animator = GetComponent<Animator>();
         model = animator.transform;
+        playerAudioSource = GetComponent<AudioSource>();
         
         cineCam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
         if (cineCam != null)
@@ -132,6 +143,8 @@ public class ThirdPersonMovement : MonoBehaviour
         {
             bankedPointsText.gameObject.SetActive(false);
         }
+        
+        playerAudioSource.loop = true;
     }
 
     void Update()
@@ -168,6 +181,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (playerHealth != null && playerHealth.IsDead())
         {
+            if(playerAudioSource.isPlaying) playerAudioSource.Stop();
             return;
         }
 
@@ -182,6 +196,12 @@ public class ThirdPersonMovement : MonoBehaviour
 
         if (_justLanded)
         {
+            // Only play the land sound if the player was falling with significant speed.
+            if (_lastFrameVelocityY < -2.0f)
+            {
+                AudioSource.PlayClipAtPoint(landSound, transform.position, 1f);
+            }
+
             if (_isPerformingFlip)
             {
                 FinishFlip();
@@ -225,16 +245,13 @@ public class ThirdPersonMovement : MonoBehaviour
 
             if (camTransform != null)
             {
-                // Here is the new logic to handle wall slide rotation
                 if (isWallSliding && lastWallNormal != Vector3.zero)
                 {
-                    // Force rotation to be parallel to the wall
                     Quaternion targetWallRotation = Quaternion.LookRotation(-lastWallNormal);
                     transform.rotation = Quaternion.Slerp(transform.rotation, targetWallRotation, turnSmoothTime * 10f * Time.deltaTime);
                 }
                 else if (isAiming || !_isPerformingFlip)
                 {
-                    // Regular camera-based rotation
                     float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + camTransform.eulerAngles.y;
                     float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
                     transform.rotation = Quaternion.Euler(0f, angle, 0f);
@@ -274,6 +291,7 @@ public class ThirdPersonMovement : MonoBehaviour
             {
                 velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
                 if(animator) animator.SetTrigger("JumpTrigger");
+                AudioSource.PlayClipAtPoint(jumpSound, transform.position);
             }
             else if(isTouchingWall && CanWallJump())
             {
@@ -285,6 +303,8 @@ public class ThirdPersonMovement : MonoBehaviour
         if(animator) {
             animator.SetBool("isSprinting", isSprinting);
         }
+
+        HandleAudio();
 
         if (!isGrounded && !isWallSliding)
         {
@@ -334,8 +354,45 @@ public class ThirdPersonMovement : MonoBehaviour
              potentialMidAirPoints = 0;
         }
         
+        _lastFrameVelocityY = velocity.y;
         controller.Move(velocity * Time.deltaTime);
         UpdatePotentialPointsUI();
+    }
+
+    private void HandleAudio()
+    {
+        float currentSpeed = new Vector2(controller.velocity.x, controller.velocity.z).magnitude;
+        bool isMovingOnGround = currentSpeed > 0.1f && isGrounded;
+
+        if (isWallSliding)
+        {
+            if (!playerAudioSource.isPlaying || playerAudioSource.clip != wallSlideLoopSound)
+            {
+                playerAudioSource.clip = wallSlideLoopSound;
+                playerAudioSource.volume = 0.5f;
+                playerAudioSource.pitch = 1f;
+                playerAudioSource.Play();
+            }
+        }
+        else if (isMovingOnGround)
+        {
+            if (!playerAudioSource.isPlaying || playerAudioSource.clip != skateLoopSound)
+            {
+                playerAudioSource.clip = skateLoopSound;
+                playerAudioSource.Play();
+            }
+            
+            float speedRatio = Mathf.InverseLerp(0, speed * speedMod, currentSpeed);
+            playerAudioSource.volume = Mathf.Lerp(0.1f, 0.5f, speedRatio);
+            playerAudioSource.pitch = Mathf.Lerp(0.8f, 1.5f, speedRatio);
+        }
+        else
+        {
+            if (playerAudioSource.isPlaying)
+            {
+                playerAudioSource.Stop();
+            }
+        }
     }
 
     void UpdatePotentialPointsUI()
@@ -399,10 +456,10 @@ public class ThirdPersonMovement : MonoBehaviour
         animator.SetTrigger("Stumble");
         controller.enabled = false;
         transform.rotation = Quaternion.identity;
-        cineCam.GetComponent<CameraEffects>().Shake(0.1f);
+        if(cineCam) cineCam.GetComponent<CameraEffects>()?.Shake(0.1f);
         int randomIndex = UnityEngine.Random.Range(0, stumbleTexts.Count);
-        BlurbText.Instance.TypeText(stumbleTexts[randomIndex]);
-        comboMeter.SpendComboPoint(UnityEngine.Random.Range(0, 6) + 5);
+        if(BlurbText.Instance) BlurbText.Instance.TypeText(stumbleTexts[randomIndex]);
+        if(comboMeter) comboMeter.SpendComboPoint(UnityEngine.Random.Range(0, 6) + 5);
         if (stumbleVFXPrefab != null)
         {
             Instantiate(stumbleVFXPrefab, transform.position, Quaternion.identity);
@@ -457,7 +514,8 @@ public class ThirdPersonMovement : MonoBehaviour
             Instantiate(wallJumpVFXPrefab, wallCheck.position, Quaternion.LookRotation(lastWallNormal));
         }
         if(animator) animator.SetTrigger("JumpTrigger");
-        comboMeter.AddComboPoint(5);
+        if(comboMeter) comboMeter.AddComboPoint(5);
+        AudioSource.PlayClipAtPoint(wallKickSound, transform.position);
     }
 
     private bool IsHighEnoughForTrick()
@@ -471,7 +529,7 @@ public class ThirdPersonMovement : MonoBehaviour
 
     public IEnumerator PlungeDownward(float force)
     {
-        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), true);
+        Physics.IgnoreLayerCollision(gameObject.layer, LayerMask.NameToLayer("Enemy"), true);
         velocity.y = -Mathf.Abs(force);
         velocity.x = 0f;
         velocity.z = 0f;
@@ -490,7 +548,7 @@ public class ThirdPersonMovement : MonoBehaviour
         }
         
         yield return new WaitForSeconds(0.2f); 
-        Physics.IgnoreLayerCollision(LayerMask.NameToLayer("Player"), LayerMask.NameToLayer("Enemy"), false);
+        Physics.IgnoreLayerCollision(gameObject.layer, LayerMask.NameToLayer("Enemy"), false);
     }
 
     public IEnumerator DashForward(bool showVFX)
@@ -541,7 +599,6 @@ public class ThirdPersonMovement : MonoBehaviour
         {
             if (timer > maxWaitTime)
             {
-                Debug.LogWarning("WaitUntilNotInsideEnemy timed out.");
                 yield break;
             }
             controller.Move(exitDir * 0.5f * Time.deltaTime);
