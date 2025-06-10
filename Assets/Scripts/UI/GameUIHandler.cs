@@ -28,15 +28,6 @@ public class GameUIHandler : MonoBehaviour
             Debug.LogWarning("GameUIHandler: PlayerHealth reference is missing!");
         }
 
-        if (UIDoc != null)
-        {
-            m_HealthBarMask = UIDoc.rootVisualElement.Q<VisualElement>("HealthBarMask");
-        }
-        else
-        {
-            Debug.LogWarning("GameUIHandler: UIDocument reference is missing!");
-        }
-
         HealthChanged(); // Initial update for player health
 
 

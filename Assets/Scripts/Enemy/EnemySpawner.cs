@@ -153,7 +153,7 @@ public class EnemySpawner : MonoBehaviour
         Transform spawnPoint = regularSpawnPoints[_currentSpawnPointIndex];
         _currentSpawnPointIndex = (_currentSpawnPointIndex + 1) % regularSpawnPoints.Length;
 
-        float randomScale = Random.Range(0.9f, 1.1f);
+        float randomScale = Random.Range(0.8f, 1.5f);
         GameObject enemy = Instantiate(enemyPrefab, spawnPoint.position, Quaternion.identity);
         enemy.transform.localScale = new Vector3(randomScale, randomScale, randomScale);
 

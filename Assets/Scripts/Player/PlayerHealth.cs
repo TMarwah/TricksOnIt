@@ -78,7 +78,7 @@ public class PlayerHealth : MonoBehaviour
     public void RestoreHealthToFull()
     {
         _currentHealth = MaxHealth;
-        animator.SetTrigger("Undie");
+        animator.SetBool("isDead", false);
         isDead = false;
         OnHealthChange?.Invoke();
     }
@@ -168,10 +168,23 @@ public class PlayerHealth : MonoBehaviour
         OnHealthChange?.Invoke();
 
         Debug.Log("Player has died.");
-        animator?.SetTrigger("Die");
-        
-        // Notify the GameManager to start the game over sequence
+        animator?.SetBool("isDead", true);
+
+        StartCoroutine(NotifyPlayerDeath());
+    }
+
+    private IEnumerator NotifyPlayerDeath()
+    {
+        yield return new WaitForSeconds(2f);
+        Destroy(GetComponent<Rigidbody>());
+         // Notify the GameManager to start the game over sequence
         GameManager.Instance?.NotifyPlayerDied();
+        // Notify all enemies that the player has died
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (var enemy in enemies)
+        {
+            enemy.GetComponent<EnemyChase>()?.OnPlayerDied();
+        }
     }
 
     public bool IsDead()

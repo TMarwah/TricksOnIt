@@ -65,7 +65,7 @@ public class PlayerAttack : MonoBehaviour
         {
             camEffects = cineCam.GetComponent<CameraEffects>();
         }
-        comboMeter = FindObjectOfType<ComboMeter>();
+        comboMeter = GetComponent<ComboMeter>();
     }
 
     void Update()

@@ -154,11 +154,6 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (!isPaused)
-        {
-            HandleDebugInput();
-        }
-
         if (!isPaused && !isAdvancingLevel)
         {
             Timer += Time.deltaTime;
@@ -207,6 +202,10 @@ public class GameManager : MonoBehaviour
     public void ResumeGame()
     {
         if (!isPaused) return;
+        if (musicSource != null)
+        {
+            musicSource.volume = musicSource.volume * 2f; // Restore the music volume to its original level
+        }
 
         Debug.Log("Resuming game...");
         if (pauseMenuUI != null) pauseMenuUI.SetActive(false);
@@ -289,6 +288,14 @@ public class GameManager : MonoBehaviour
         bossHasBeenSpawnedForCurrentLevel = false;
         IsBossAboutToSpawn = false;
         Timer = 0f;
+
+        // Clear all existing enemies in the scene
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        foreach (GameObject enemy in enemies)
+        {
+            Destroy(enemy);
+            Debug.Log("Deleted enemy");
+        }
 
         CurrentEnemiesRemaining = currentLevelData.totalEnemies;
         OnEnemiesRemainingChanged?.Invoke(CurrentEnemiesRemaining);
@@ -402,8 +409,7 @@ public class GameManager : MonoBehaviour
         
         ChangeLevel(CurrentLevelIndex + 1);
     }
-    
-    // MODIFIED: This coroutine now has multiple phases for a more cinematic Game Over.
+
     private IEnumerator PlayerDeathSequenceCoroutine()
     {
         isAdvancingLevel = true;
@@ -429,61 +435,45 @@ public class GameManager : MonoBehaviour
             gameOverBackground.gameObject.SetActive(true);
         }
 
-        try
+        // --- Phase 1: Slow-mo and fade in background ---
+        float fadeTimer = 0f;
+        while (fadeTimer < gameOverFadeInDuration)
         {
-            // --- Phase 1: Slow-mo and fade in background ---
-            float fadeTimer = 0f;
-            while (fadeTimer < gameOverFadeInDuration)
-            {
-                fadeTimer += Time.unscaledDeltaTime;
-                float progress = Mathf.Clamp01(fadeTimer / gameOverFadeInDuration);
+            fadeTimer += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(fadeTimer / gameOverFadeInDuration);
 
-                Time.timeScale = Mathf.Lerp(1.0f, bossDefeatSlowMoFactor, progress);
-                if (colorAdjustments != null)
-                {
-                    colorAdjustments.saturation.value = Mathf.Lerp(originalSaturation, -100f, progress);
-                }
-                if (gameOverBackground != null)
-                {
-                    Color newColor = gameOverBackground.color;
-                    newColor.a = Mathf.Lerp(0, 1, progress); // Fade in alpha
-                    gameOverBackground.color = newColor;
-                }
-                yield return null;
-            }
+            // This line controls the slow-motion effect, ensuring animation can play slowly
+            Time.timeScale = Mathf.Lerp(1.0f, 0.05f, progress); // Slow down to near-zero
 
-            // Snap to final values for Phase 1
-            Time.timeScale = bossDefeatSlowMoFactor;
-            if (colorAdjustments != null) colorAdjustments.saturation.value = -100f;
-
-            // --- Phase 2: Pop in text ---
-            if (gameOverTextContainer != null)
+            if (gameOverBackground != null)
             {
-                gameOverTextContainer.SetActive(true);
-                // We use 'yield return' to wait for this animation to finish
-                yield return StartCoroutine(AnimateGenericUICoroutine(gameOverTextContainer));
+                Color newColor = gameOverBackground.color;
+                newColor.a = Mathf.Lerp(0, 1, progress);
+                gameOverBackground.color = newColor;
             }
-
-            // --- Phase 3: Wait for remaining duration ---
-            float timeSpent = gameOverFadeInDuration + popInDuration;
-            float remainingTime = gameOverDuration - timeSpent;
-            if (remainingTime > 0)
-            {
-                yield return new WaitForSecondsRealtime(remainingTime);
-            }
-        }
-        finally
-        {
-            // --- Phase 4: Cleanup ---
-            Debug.Log("GameManager: Game over sequence finished. Resetting state.");
-            Time.timeScale = 1.0f;
-            if (colorAdjustments != null)
-            {
-                colorAdjustments.saturation.value = originalSaturation;
-            }
+            yield return null;
         }
 
-        // --- Restart Level ---
+        // Ensure time is fully stopped before showing text
+        Time.timeScale = 0f;
+
+        // --- Phase 2: Pop in text ---
+        if (gameOverTextContainer != null)
+        {
+            gameOverTextContainer.SetActive(true);
+            yield return StartCoroutine(AnimateGenericUICoroutine(gameOverTextContainer));
+        }
+
+        // --- Phase 3: Wait for remaining duration ---
+        float timeSpent = gameOverFadeInDuration + popInDuration;
+        float remainingTime = gameOverDuration - timeSpent;
+        if (remainingTime > 0)
+        {
+            yield return new WaitForSecondsRealtime(remainingTime);
+        }
+
+        // --- Cleanup and Restart ---
+        Time.timeScale = 1.0f; // Reset time before changing level
         ChangeLevel(CurrentLevelIndex);
     }
 
@@ -543,9 +533,6 @@ public class GameManager : MonoBehaviour
     #endregion
 
     #region Debug & Pause Logic
-    
-    private void HandleDebugInput() { }
-    
     public void TogglePause()
     {
         if (isAdvancingLevel)
@@ -569,6 +556,10 @@ public class GameManager : MonoBehaviour
         if (isPaused) return;
 
         Debug.Log("Pausing game...");
+        if (musicSource != null)
+        {
+            musicSource.volume = 0.5f; // Adjust the volume to make the music quieter
+        }
         if (pauseMenuUI != null) pauseMenuUI.SetActive(true);
         if (mainCanvasUI != null) mainCanvasUI.SetActive(false);
         Time.timeScale = 0f;

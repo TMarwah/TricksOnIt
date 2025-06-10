@@ -51,7 +51,6 @@ GameObject:
   m_Component:
   - component: {fileID: 9015941088943221748}
   - component: {fileID: 6193529962161073015}
-  - component: {fileID: -3580102187603915677}
   - component: {fileID: -5362117281774534363}
   - component: {fileID: 5515548847795019912}
   - component: {fileID: 2945999106162397670}
@@ -103,33 +102,6 @@ MonoBehaviour:
   jumpDuration: 2
   nearbyNavLinks: []
   navLinkSearchRadius: 4
---- !u!54 &-3580102187603915677
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6222896032729926842}
-  serializedVersion: 4
-  m_Mass: 10
-  m_Drag: 5
-  m_AngularDrag: 1
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
 --- !u!195 &-5362117281774534363
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -289,7 +261,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: dbcb94c1263fc4e45b0d1d0c376b7f5d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: dbcb94c1263fc4e45b0d1d0c376b7f5d, type: 3}
       propertyPath: m_LocalPosition.z
@@ -615,7 +587,8 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 7
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5866666021909216657, guid: dbcb94c1263fc4e45b0d1d0c376b7f5d, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

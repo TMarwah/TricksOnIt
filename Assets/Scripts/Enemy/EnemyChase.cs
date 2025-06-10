@@ -88,7 +88,7 @@ public class EnemyChase : MonoBehaviour
 
         if (Time.time - lastAttackTime >= attackCooldown)
         {
-            agent.ResetPath();
+            agent.enabled = false;
             animator?.SetFloat("Speed", 0f);
             animator?.SetTrigger("Attack");
             lastAttackTime = Time.time;
@@ -96,31 +96,31 @@ public class EnemyChase : MonoBehaviour
     }
 
     IEnumerator ClimbAcrossLink()
-{
-    OffMeshLinkData data = agent.currentOffMeshLinkData;
-    Vector3 startPos = agent.transform.position;
-    Vector3 endPos = data.endPos + Vector3.up * agent.baseOffset;
-
-    float jumpSpeed = 3f; // You can expose this as a public variable if needed
-    float distance = Vector3.Distance(startPos, endPos);
-    float duration = distance / jumpSpeed;
-    float elapsed = 0f;
-
-    // Optional: trigger climbing animation
-    animator?.SetBool("Climbing", true);
-
-    while (elapsed < duration)
     {
-        agent.transform.position = Vector3.Lerp(startPos, endPos, elapsed / duration);
-        elapsed += Time.deltaTime;
-        yield return null;
+        OffMeshLinkData data = agent.currentOffMeshLinkData;
+        Vector3 startPos = agent.transform.position;
+        Vector3 endPos = data.endPos + Vector3.up * agent.baseOffset;
+
+        float jumpSpeed = 3f; // You can expose this as a public variable if needed
+        float distance = Vector3.Distance(startPos, endPos);
+        float duration = distance / jumpSpeed;
+        float elapsed = 0f;
+
+        // Optional: trigger climbing animation
+        animator?.SetBool("Climbing", true);
+
+        while (elapsed < duration)
+        {
+            agent.transform.position = Vector3.Lerp(startPos, endPos, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        agent.transform.position = endPos;
+        agent.CompleteOffMeshLink();
+
+        animator?.SetBool("Climbing", false);
     }
-
-    agent.transform.position = endPos;
-    agent.CompleteOffMeshLink();
-
-    animator?.SetBool("Climbing", false);
-}
 
 
     NavMeshLink FindNearbyNavMeshLink()
@@ -160,5 +160,13 @@ public class EnemyChase : MonoBehaviour
             playerHealth.TakeDamage(attackDamage);
             Debug.Log($"Enemy attacked player for {attackDamage} damage at {Time.time}");
         }
+        agent.enabled = true;
+        agent.ResetPath();
+    }
+
+    public void OnPlayerDied()
+    {
+        agent.enabled = false;
+        animator?.SetTrigger("PlayerDeath");
     }
 }

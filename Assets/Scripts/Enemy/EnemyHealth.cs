@@ -18,6 +18,7 @@ public class EnemyHealth : MonoBehaviour
         currentHealth = maxHealth;
         animator = GetComponent<Animator>();
         chaseComponent = GetComponent<EnemyChase>();
+        comboMeter = FindObjectOfType<ComboMeter>();
     }
 
     public void TakeDamage(float amount)
