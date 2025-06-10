@@ -751,7 +751,7 @@ MonoBehaviour:
     m_Bits: 239
   m_UseGeometry: 0
   m_DefaultArea: 0
-  m_GenerateLinks: 0
+  m_GenerateLinks: 1
   m_IgnoreNavMeshAgent: 1
   m_IgnoreNavMeshObstacle: 1
   m_OverrideTileSize: 0
@@ -38252,18 +38252,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 422717764819647490, guid: 786242d3122a17e4590149dc42447a8e, type: 3}
+      propertyPath: comboMeter
+      value: 
+      objectReference: {fileID: 1845748544}
     - target: {fileID: 6193529962161073015, guid: 786242d3122a17e4590149dc42447a8e, type: 3}
       propertyPath: player
       value: 
       objectReference: {fileID: 1845748537}
-    - target: {fileID: 6193529962161073015, guid: 786242d3122a17e4590149dc42447a8e, type: 3}
-      propertyPath: jumpHeight
-      value: 12
-      objectReference: {fileID: 0}
-    - target: {fileID: 6193529962161073015, guid: 786242d3122a17e4590149dc42447a8e, type: 3}
-      propertyPath: navLinkSearchRadius
-      value: 4
-      objectReference: {fileID: 0}
     - target: {fileID: 6222896032729926842, guid: 786242d3122a17e4590149dc42447a8e, type: 3}
       propertyPath: m_Name
       value: Enemy
@@ -47674,6 +47670,14 @@ PrefabInstance:
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: jumpSound
+      value: 
+      objectReference: {fileID: 8300000, guid: 2db1f90a200412341bda01ab9cd55ee0, type: 3}
+    - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: landSound
+      value: 
+      objectReference: {fileID: 8300000, guid: bc87c3dc56da87f4da4ef6900b528ef2, type: 3}
+    - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
       propertyPath: dashDuration
       value: 0.1
       objectReference: {fileID: 0}
@@ -47685,6 +47689,14 @@ PrefabInstance:
       propertyPath: dashVFXPrefab
       value: 
       objectReference: {fileID: 1141330259687333427, guid: 6718dc24203da53468af9ada8fef7d6d, type: 3}
+    - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: wallKickSound
+      value: 
+      objectReference: {fileID: 8300000, guid: d98c87eda8a863b4da1baee47b2560c5, type: 3}
+    - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: skateLoopSound
+      value: 
+      objectReference: {fileID: 8300000, guid: e3ebbe3ef93aa1d41b24b2ac25637d8f, type: 3}
     - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
       propertyPath: stumbleDuration
       value: 1
@@ -47701,6 +47713,14 @@ PrefabInstance:
       propertyPath: wallJumpVFXPrefab
       value: 
       objectReference: {fileID: 141433446842962269, guid: 9fe8f8b3288e45a44af36ff8aa04486e, type: 3}
+    - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: groundDeceleration
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: wallSlideLoopSound
+      value: 
+      objectReference: {fileID: 8300000, guid: e3ebbe3ef93aa1d41b24b2ac25637d8f, type: 3}
     - target: {fileID: 5186600968599660094, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
       propertyPath: maxLandingAngleDeviation
       value: 50
@@ -47757,6 +47777,14 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 8305554924307869065, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: dashFOV
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 8305554924307869065, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: sprintFOV
+      value: 80
+      objectReference: {fileID: 0}
     - target: {fileID: 8521979862313514555, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
       propertyPath: m_LocalPosition.y
       value: 3.0106475
@@ -47794,6 +47822,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 7177991128484655659, guid: 59a35ab9f68edff40b6e5332bed330f5, type: 3}
     - target: {fileID: 8763516684770596977, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: plungeBaseRange
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8763516684770596977, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
       propertyPath: plungeImpactSound
       value: 
       objectReference: {fileID: 8300000, guid: 7f8c88bb9139566489b8d1e4bc24947d, type: 3}
@@ -47801,6 +47833,10 @@ PrefabInstance:
       propertyPath: plungeImpactVolume
       value: 0.76
       objectReference: {fileID: 0}
+    - target: {fileID: 8763516684770596977, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+      propertyPath: plungeAttackVFXPrefab
+      value: 
+      objectReference: {fileID: 141433446842962269, guid: 9fe8f8b3288e45a44af36ff8aa04486e, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -47820,6 +47856,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4ea5c1c37ac10456680020004a4169ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1845748544 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2197151139938414523, guid: 06f7fe3eb8664da4f8615e1d597609bb, type: 3}
+  m_PrefabInstance: {fileID: 1845748536}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 442568025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0315e5bc06d5aae44b725c851d20c6b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!64 &1846637850
