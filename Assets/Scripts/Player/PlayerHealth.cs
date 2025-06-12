@@ -30,6 +30,7 @@ public class PlayerHealth : MonoBehaviour
     private bool isDead = false;
     private bool isInvulnerable = false;
     private Unity.Cinemachine.CinemachineCamera virtualCamera;
+    private ComboMeter comboMeter;
     
     private SkinnedMeshRenderer[] playerRenderers;
 
@@ -37,6 +38,7 @@ public class PlayerHealth : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         virtualCamera = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+        comboMeter = GetComponent<ComboMeter>();
 
         playerRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
         if (playerRenderers == null || playerRenderers.Length == 0)
@@ -88,6 +90,7 @@ public class PlayerHealth : MonoBehaviour
         if (isInvulnerable || isDead) return;
 
         ChangeHealth(-damage);
+        comboMeter.SpendComboPoint((int)(damage * 2));
         animator?.SetTrigger("takeDamage");
 
         if (virtualCamera != null)

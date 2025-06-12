@@ -6,8 +6,6 @@ public class GameUIHandler : MonoBehaviour
 {
     [Header("Player UI Elements (UI Toolkit)")]
     public PlayerHealth PlayerHealth;
-    public UIDocument UIDoc;
-    private VisualElement m_HealthBarMask;
 
     [Header("Enemy/Boss UI Elements (TextMeshPro)")]
     [Tooltip("Assign your TextMeshProUGUI element that will display enemy count or boss warning.")]
@@ -75,14 +73,6 @@ public class GameUIHandler : MonoBehaviour
     // --- Player Health UI Methods (Existing Logic) ---
     void HealthChanged()
     {
-        Debug.Log("[GameUIHandler] HealthChanged event received.");
-        if (PlayerHealth != null && m_HealthBarMask != null)
-        {
-            float normalized = PlayerHealth.HealthNormalized();
-            // m_HealthLabel.text = $"{PlayerHealth.CurrentHealth}/{PlayerHealth.MaxHealth}";
-            m_HealthBarMask.style.width = Length.Percent(normalized * 100f);
-        }
-
         if (healthText != null && PlayerHealth != null)
         {
             int healthBars = Mathf.CeilToInt(PlayerHealth.CurrentHealth / 5f);
