@@ -1,5 +1,5 @@
 
-*<p align="center">They painted this world grey. It's time to paint the world back.</p>*
+*<p align="center">They painted this world grey. It's time to paint it back.</p>*
 
 ---
 
